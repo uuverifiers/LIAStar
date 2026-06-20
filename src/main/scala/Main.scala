@@ -43,6 +43,8 @@ import LIAStarSolver.SatProcedure.SatProcedure
   val g: IFormula = X(0) < -1
   val f: IFormula = X(0) === 1
 
+  println(SimpleAPI.pp(g))
+
   // api.!!(g)
   // println(api.???)
 

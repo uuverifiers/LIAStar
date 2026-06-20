@@ -25,28 +25,17 @@ class SatProcedure(
   // calculate if formula g(X) & f*(X) is sat or unsat
   def checkFormula(): Boolean = {
     // ...
-    val nUnfoldings = 1
+    val nUnfoldings = 2
 
     /*
      * check underApprox(X) & f_less_2n(Y) & g(X+Y) unsat
      */
     val Y: Seq[IConstant] = solverState.createConstants("y_", X.length)
 
-
-
-    // TODO
-    val fLess2Unfoldings = formulaFactory.fLessN(2, Y)
-    println(pp(fLess2Unfoldings <=> ((Y(0) === 0) | Y(0) === 1 )))
-    solverState.solverInstance.!!(
-      !(fLess2Unfoldings <=> ((Y(0) === 0) | Y(0) === 1 )))
-
-    println(s"helllo ${solverState.solverInstance.???}")
-    println(solverState.solverInstance.partialModel)
-    println("\n\n\n\n")
-
-
-
-
+    val fLess2nUnfoldingsOfY = formulaFactory.fLessN(
+      2 * nUnfoldings,
+      Y
+    )
 
     val subst: Map[ConstantTerm, ITerm] =
       X.zip(Y)
@@ -56,23 +45,18 @@ class SatProcedure(
         .toMap
 
     val g_of_XplusY = ConstantSubstVisitor(g, subst)
-    val fLess2nUnfoldings = formulaFactory.fLessN(
-      2 * nUnfoldings,
-      Y
-    )
 
     val unsatCondForStrengthenOver: IFormula =
-      solverState.underApproxFStar & fLess2nUnfoldings & g_of_XplusY
+      solverState.underApproxFStar & fLess2nUnfoldingsOfY & g_of_XplusY
+    println(
+      s"DEBUG: unsatCondForStrengthenOver ${pp(unsatCondForStrengthenOver)}"
+    )
 
-
-
-
-    println(pp(unsatCondForStrengthenOver))
     if (SMT.isUnsat(unsatCondForStrengthenOver, solverState)) {
-      println("strengthen over")
+      println("DEBUG: strengthen over")
       getNextOverApproximation(solverState, nUnfoldings)
     } else {
-      println("DONT strengthen over")
+      println("DEBUG: DONT strengthen over")
     }
 
     // interp.calculateNextOverApproximation(underApprox)
@@ -85,8 +69,8 @@ class SatProcedure(
       nUnfoldings: Int
   ): IFormula = {
     import formulaFactory._
-    //TODO: QUESTION: is this a problem, if i do it multiple times (already in checkFormula)
-    val Y = solverState.createConstants("y_", solverState.X.length) 
+    // TODO: QUESTION: is this a problem, if i do it multiple times (already in checkFormula)
+    val Y = solverState.createConstants("y_", solverState.X.length)
     val Z = solverState.createConstants("z_", solverState.X.length)
 
     val f1 =
@@ -99,16 +83,24 @@ class SatProcedure(
     val f2 = !(xEqualYPlusZ(X, YPrime, ZPrime) & fLessN(
       nUnfoldings,
       YPrime
-    ) & substituteX(solverState.underApproxFStar, ZPrime))
+    ) & substituteX(solverState.g, ZPrime))
 
-    // check
-    if (SMT.isValid(f1 ==> f2, solverState)) { // TODO: reformulate to unsat question
+    // TODO: This is theoretically only a sanity check, since it only gets called, when
+    // u(x) & flessN(n, y) & g(x+y) is unsat
+    // if (SMT.isValid(f1 ==> f2, solverState)) { // TODO: reformulate to unsat question
+
+    println(s"DEBUG f1: ${pp(f1)}")
+    println(s"DEBUG f2: ${pp(f2)}")
+    if (SMT.isUnsat(f1 & f2.notSimplify, solverState)) { // TODO: reformulate to unsat question
       // get Interpolant between f1 and f2
-      println("in f1 implies f2")
+      println("DEBUG: in f1 implies f2")
 
       val itp = SMT.getInterpolant(f1, f2.notSimplify, solverState)
+      println(s"DEBUG ITP: ${pp(itp)}")
     } else {
-      print("NOT f1 implies f2. Don't get Interpolant.\n")
+      print(
+        "DEBUG: NOT f1 implies f2. Don't get Interpolant. (SHOULDNT HAPPEN)\n"
+      ) // TODO
     }
 
     true // PLACEHOLDER

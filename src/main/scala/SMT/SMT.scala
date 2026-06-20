@@ -38,23 +38,24 @@ object SMT {
   def isValid(formula: IFormula, solverState: SolverState): Boolean = {
     import solverState.solverInstance._
     push()
-    !!(formula)
+    !!(!(formula))
     val res = ???
     pop()
     res match {
-      case ProverStatus.Valid => true
+      case ProverStatus.Unsat => true
       case _                => false
     }
   }
 
   // calculate ITP, s.t a -> ITP and ITP -> b
+  // requires a & b is unsat
   def getInterpolant(
       a: IFormula,
       b: IFormula,
       solverState: SolverState
   ): IFormula = {
     import solverState.solverInstance._
-
+    require(!SMT.isSat(a&b, solverState))
 
     setConstructProofs(true) //needed for getInterpolants
 
@@ -63,11 +64,9 @@ object SMT {
     !!(a)
     setPartitionNumber(2)
     !!(b)
-    println(s"HLEP ${???}") // unsat ????????needed????
+    ??? // show eldarica a&b is unsat
     val res = getInterpolants(Seq(Set(1), Set(2)))(0)
     pop()
-
-    // TODO: ? setConstructProofs(false) ???
 
     res
   }

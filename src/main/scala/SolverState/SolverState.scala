@@ -10,6 +10,7 @@ class SolverState(
     val f: IFormula,
     val X: Seq[IConstant]
 ) {
+  require(X.length>0)
 
   var underApproxFStar: IFormula = X.map(_ === 0).reduce((x, y) => x &&& y)
   var overApproxFStar: IFormula = true

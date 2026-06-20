@@ -33,7 +33,7 @@ class FormulaFactory(val state: SolverState) {
     )
     val substMap: Map[ConstantTerm, ITerm] =
       state.X.zip(Y).map { case (x, y) => x.c -> y.asInstanceOf[ITerm] }.toMap
-    return ConstantSubstVisitor(state.f, substMap)
+    return ConstantSubstVisitor(formula, substMap)
   }
 
   def xEqualYPlusZ(

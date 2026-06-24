@@ -5,6 +5,7 @@ import ap.parser.IExpression
 import ap.terfor.ConstantTerm
 import ap.basetypes.IdealInt
 import LIAStarSolver.SatProcedure.SatProcedure
+import LIAStarSolver.SatResult.{SatResult, Sat, Unsat}
 
 @main def main(): Unit = {
 
@@ -39,9 +40,10 @@ import LIAStarSolver.SatProcedure.SatProcedure
   // (2*X(0) + 3*X(1) <= 20)
 
   val X: IndexedSeq[IConstant] = api.createConstants("x_", 0 until 1).map(_.asInstanceOf[IConstant])
-  //val g: IFormula = X(0) < -2
-  val g: IFormula = X(0) < 2
+  val g: IFormula = X(0) < -2
+  //val g: IFormula = X(0) < 2
   val f: IFormula = X(0) === 1
+
 
   println(SimpleAPI.pp(g))
 
@@ -49,7 +51,10 @@ import LIAStarSolver.SatProcedure.SatProcedure
   // println(api.???)
 
   val s = SatProcedure(api, g, f, X)
-  s.checkFormula()
+  val res: SatResult = s.checkFormula()
+  println(res)
+
+  
 
   api.shutDown
 }

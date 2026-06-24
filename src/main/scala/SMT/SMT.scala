@@ -21,10 +21,9 @@ object SMT {
     }
   }
 
-
   // check if formula is Sat.
   // Any other result returns false (including timeout)
-  //TODO is timeout even possible
+  // TODO is timeout even possible
   def isSat(formula: IFormula, solverState: SolverState): Boolean = {
     import solverState.solverInstance._
     push()
@@ -37,8 +36,8 @@ object SMT {
     }
   }
   // check if formula is Valid.
-  // Any other result returns false (including timeout) 
-  //TODO is timeout even possible
+  // Any other result returns false (including timeout)
+  // TODO is timeout even possible
   def isValid(formula: IFormula, solverState: SolverState): Boolean = {
     import solverState.solverInstance._
     push()
@@ -47,8 +46,33 @@ object SMT {
     pop()
     res match {
       case ProverStatus.Unsat => true
-      case _                => false
+      case _                  => false
     }
+  }
+
+  // return ProverStatus as well as a Model, if ProverStatus.Sat
+  def getProverStatusAndModel(
+      formula: IFormula,
+      formulaVariables: Seq[IConstant],
+      solverState: SolverState
+  ): (ProverStatus.Value, Option[Map[IConstant, Int]]) = {
+    import solverState.solverInstance._
+    push()
+    !!(formula)
+    val res = ???
+    val returnRes = if (res == SimpleAPI.ProverStatus.Sat) {
+      val evaluator = completeModel
+      val model =
+        solverState.X.map { x =>
+          x -> evaluator(x).asInstanceOf[IIntLit].value.intValueSafe
+        }.toMap
+
+      (res, Some(model))
+    } else {
+      (res, None)
+    }
+    pop()
+    returnRes
   }
 
   // calculate ITP, s.t a -> ITP and ITP -> !b
@@ -59,9 +83,9 @@ object SMT {
       solverState: SolverState
   ): IFormula = {
     import solverState.solverInstance._
-    require(SMT.isUnsat(a&b, solverState))
+    require(SMT.isUnsat(a & b, solverState))
 
-    setConstructProofs(true) //needed for getInterpolants
+    setConstructProofs(true) // needed for getInterpolants
 
     push()
     setPartitionNumber(1)

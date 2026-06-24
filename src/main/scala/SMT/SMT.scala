@@ -20,8 +20,11 @@ object SMT {
       case _                  => false
     }
   }
+
+
   // check if formula is Sat.
   // Any other result returns false (including timeout)
+  //TODO is timeout even possible
   def isSat(formula: IFormula, solverState: SolverState): Boolean = {
     import solverState.solverInstance._
     push()
@@ -34,7 +37,8 @@ object SMT {
     }
   }
   // check if formula is Valid.
-  // Any other result returns false (including timeout)
+  // Any other result returns false (including timeout) 
+  //TODO is timeout even possible
   def isValid(formula: IFormula, solverState: SolverState): Boolean = {
     import solverState.solverInstance._
     push()
@@ -47,7 +51,7 @@ object SMT {
     }
   }
 
-  // calculate ITP, s.t a -> ITP and ITP -> b
+  // calculate ITP, s.t a -> ITP and ITP -> !b
   // requires a & b is unsat
   def getInterpolant(
       a: IFormula,
@@ -55,7 +59,7 @@ object SMT {
       solverState: SolverState
   ): IFormula = {
     import solverState.solverInstance._
-    require(!SMT.isSat(a&b, solverState))
+    require(SMT.isUnsat(a&b, solverState))
 
     setConstructProofs(true) //needed for getInterpolants
 

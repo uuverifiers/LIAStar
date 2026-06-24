@@ -38,9 +38,9 @@ import LIAStarSolver.SatProcedure.SatProcedure
   // (3*X(0) - X(1) <= 8) &
   // (2*X(0) + 3*X(1) <= 20)
 
-  val X: IndexedSeq[IConstant] =
-    api.createConstants("x_", 0 until 1).map(_.asInstanceOf[IConstant])
-  val g: IFormula = X(0) < -1
+  val X: IndexedSeq[IConstant] = api.createConstants("x_", 0 until 1).map(_.asInstanceOf[IConstant])
+  //val g: IFormula = X(0) < -2
+  val g: IFormula = X(0) < 2
   val f: IFormula = X(0) === 1
 
   println(SimpleAPI.pp(g))

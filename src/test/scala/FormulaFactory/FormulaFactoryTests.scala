@@ -159,7 +159,7 @@ class FormulaFactorTests extends munit.FunSuite with PrincessAssertions {
     val Y = state.createConstants("y_", 4)
     val Z = state.createConstants("z_", 4)
 
-    val obtained1 = formulaFactory.xEqualYPlusZ(X, Y, Z)
+    val obtained1 = FormulaFactory.xEqualYPlusZ(X, Y, Z)
     val expected1 =
       X(0) === Y(0) + Z(0) &
         X(1) === Y(1) + Z(1) &
@@ -173,7 +173,7 @@ class FormulaFactorTests extends munit.FunSuite with PrincessAssertions {
     // check the same dimensions are required
     val W = state.createConstants("w", 2)
     intercept[AssertionError] {
-      formulaFactory.xEqualYPlusZ(W, Y, Z)
+      FormulaFactory.xEqualYPlusZ(W, Y, Z)
     }
   }
 

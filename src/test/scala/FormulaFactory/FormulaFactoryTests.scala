@@ -9,7 +9,7 @@ import LIAStarSolver.testhelpers.PrincessAssertions
 class FormulaFactorTests extends munit.FunSuite with PrincessAssertions {
 
   test("fLessN: single element onedimensional f") {
-    val api = SimpleAPI.spawn
+    val api = SimpleAPI.spawnWithAssertions
     val x = api.createConstant("x").asInstanceOf[IConstant]
 
     val f = x === 1
@@ -75,7 +75,7 @@ class FormulaFactorTests extends munit.FunSuite with PrincessAssertions {
   test("fLessN: half-space, two unfoldings") {
     import ap.parser.IExpression.ex
 
-    val api = SimpleAPI.spawn
+    val api = SimpleAPI.spawnWithAssertions
 
     val X: Seq[IConstant] =
       api.createConstants("x", 0 until 2) map (_.asInstanceOf[IConstant])
@@ -92,19 +92,28 @@ class FormulaFactorTests extends munit.FunSuite with PrincessAssertions {
     val expected2 =
       (Y(0) === 0 & Y(1) === 0) |
         (Y(0) + Y(1) >= 1) |
-        (state.exVector(2) { x =>
-          state.exVector(2) { z =>
-            (x(0) + x(1) >= 1) &
-              (z(0) + z(1) >= 1) &
-              (Y(0) === x(0) + z(0)) &
-              (Y(1) === x(1) + z(1))
+        ex{ (x1,x2,z1,z2)  =>
+            (x1 + x2 >= 1) &
+              (z1 + z2 >= 1) &
+              (Y(0) === x1 + z1) &
+              (Y(1) === x2 + z2)
           }
-        })
+    //val expected2 =
+      //(Y(0) === 0 & Y(1) === 0) |
+        //(Y(0) + Y(1) >= 1) |
+        //(state.exVector(2) { x =>
+          //state.exVector(2) { z =>
+            //(x(0) + x(1) >= 1) &
+              //(z(0) + z(1) >= 1) &
+              //(Y(0) === x(0) + z(0)) &
+              //(Y(1) === x(1) + z(1))
+          //}
+        //})
     assertEquivalent(api, obtained2, expected2)
   }
 
   test("substituteX: single dimension Test") {
-    val api = SimpleAPI.spawn
+    val api = SimpleAPI.spawnWithAssertions
     val x = api.createConstant("x").asInstanceOf[IConstant]
     val f = x === 9
     val g = x >= 8 | x =/= -20
@@ -122,7 +131,7 @@ class FormulaFactorTests extends munit.FunSuite with PrincessAssertions {
     assertEquals(obtained2, expected2)
   }
   test("substituteX: multi dimension Test") {
-    val api = SimpleAPI.spawn
+    val api = SimpleAPI.spawnWithAssertions
     val X: Seq[IConstant] =
       api.createConstants("x", 0 until 4) map (_.asInstanceOf[IConstant])
     val f = X(0) === 2 & X(1) < 7 & X(3) >= X(2)
@@ -137,7 +146,7 @@ class FormulaFactorTests extends munit.FunSuite with PrincessAssertions {
   }
 
   test("substituteX: multi dimension Test") {
-    val api = SimpleAPI.spawn
+    val api = SimpleAPI.spawnWithAssertions
     val X: Seq[IConstant] =
       api.createConstants("x", 0 until 4) map (_.asInstanceOf[IConstant])
     val f = X(0) === 2 & X(1) < 7 & X(3) >= X(2)
@@ -150,31 +159,5 @@ class FormulaFactorTests extends munit.FunSuite with PrincessAssertions {
     assertEquals(obtained1, expected1)
   }
 
-  test("xEqualYPlusZ") {
-    val api = SimpleAPI.spawn
-    val X: Seq[IConstant] =
-      api.createConstants("x", 0 until 4) map (_.asInstanceOf[IConstant])
-    val state = SolverState(api, true, true, X)
-    val formulaFactory = FormulaFactory(state)
-    val Y = state.createConstants("y_", 4)
-    val Z = state.createConstants("z_", 4)
-
-    val obtained1 = FormulaFactory.xEqualYPlusZ(X, Y, Z)
-    val expected1 =
-      X(0) === Y(0) + Z(0) &
-        X(1) === Y(1) + Z(1) &
-        X(2) === Y(2) + Z(2) &
-        X(3) === Y(3) + Z(3)
-
-    // NOTE: if order of coordinates shouldn't matter the test could use assertEquivalent
-    assertEquals(expected1, obtained1)
-
-
-    // check the same dimensions are required
-    val W = state.createConstants("w", 2)
-    intercept[AssertionError] {
-      FormulaFactory.xEqualYPlusZ(W, Y, Z)
-    }
-  }
 
 }

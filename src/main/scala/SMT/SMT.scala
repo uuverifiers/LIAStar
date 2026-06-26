@@ -1,7 +1,9 @@
 package LIAStarSolver.SMT
 import LIAStarSolver.SolverState.SolverState
+import LIAStarSolver.SatResult.Model
 
 import ap.parser._
+import ap.basetypes.IdealInt
 import ap.SimpleAPI
 import ap.SimpleAPI.ProverStatus
 
@@ -55,7 +57,7 @@ object SMT {
       formula: IFormula,
       formulaVariables: Seq[IConstant],
       solverState: SolverState
-  ): (ProverStatus.Value, Option[Map[IConstant, Int]]) = {
+  ): (ProverStatus.Value, Option[Model]) = {
     import solverState.solverInstance._
     push()
     !!(formula)
@@ -64,7 +66,7 @@ object SMT {
       val evaluator = completeModel
       val model =
         solverState.X.map { x =>
-          x -> evaluator(x).asInstanceOf[IIntLit].value.intValueSafe
+          x -> evaluator(x).asInstanceOf[IIntLit].value
         }.toMap
 
       (res, Some(model))

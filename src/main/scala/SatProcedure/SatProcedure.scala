@@ -9,6 +9,7 @@ import LIAStarSolver.SolverState.SolverState
 import LIAStarSolver.FormulaFactory.FormulaFactory
 import LIAStarSolver.SMT.SMT
 import LIAStarSolver.SatResult.{SatResult, Sat, Unsat, Model}
+import LIAStarSolver.SemilinearSet.LinearSet
 
 class SatProcedure(
     solverInstance: SimpleAPI,
@@ -23,7 +24,7 @@ class SatProcedure(
   // calculate if formula g(X) & f*(X) is sat or unsat
   def checkFormula(): SatResult = {
 
-    // check if a exit criteria can be applied right from the start
+    // check if an exit criteria can be applied right from the start
     if (isEarlyUnsat) {
       println(
         s"DEBUG early unsat with overapprox ${pp(solverState.overApproxFStar)}"
@@ -72,7 +73,9 @@ class SatProcedure(
           )
         val returnValue = proverStatus match {
           case ProverStatus.Sat =>
-            Sat(modelOption.get) // TODO: can there not be a model given, even if sat was returned??
+            Sat(
+              modelOption.get
+            ) // TODO: can there not be a model given, even if sat was returned??
           case ProverStatus.Unsat => Unsat
           case _                  =>
             throw new Exception(
@@ -91,7 +94,7 @@ class SatProcedure(
 
       if (SMT.isUnsat(unsatCondForStrengthenOver, solverState)) {
         println("DEBUG: strengthen over")
-        strengthenOverApproximation(nUnfoldings, solverState)
+        strengthenOverApproximation(nUnfoldings)
       } else {
         println("DEBUG: DONT strengthen over")
       }
@@ -129,12 +132,12 @@ class SatProcedure(
       assert(proverStatus == ProverStatus.Sat && modelOption.isDefined)
       val solution_fAndNotUnderapprox: Model = modelOption.get
 
-      
-      println(solution_fAndNotUnderapprox)
+      println("DEBUG WEAKEN UNDER")
+      weakenUnderApproximation(solution_fAndNotUnderapprox)
 
     }
 
-    println("DEBUG: RETURNING ****")
+    println("DEBUG: RETURNING UNSAT ONLY AS PLACEHOLDER. NOT REAL RESULT!")
     Unsat // TODO nur platzhalter!!!!!!
   }
 
@@ -159,8 +162,7 @@ class SatProcedure(
     }
   }
   def strengthenOverApproximation(
-      nUnfoldings: Int,
-      solverState: SolverState
+      nUnfoldings: Int
   ): Unit = {
     import formulaFactory._
     // TODO: QUESTION: is this a problem, if i do it multiple times (already in checkFormula)
@@ -171,10 +173,10 @@ class SatProcedure(
       substituteX(solverState.underApproxFStar, Y) & fLessN(
         nUnfoldings,
         Z
-      ) & FormulaFactory.xEqualYPlusZ(X, Y, Z)
+      ) & X === (Y +++ Z)
     val YPrime = solverState.createConstants("yPrime_", solverState.X.length)
     val ZPrime = solverState.createConstants("zPrime_", solverState.X.length)
-    val f2 = !(FormulaFactory.xEqualYPlusZ(X, YPrime, ZPrime) & fLessN(
+    val f2 = !(X === (YPrime +++ ZPrime) & fLessN(
       nUnfoldings,
       YPrime
     ) & substituteX(solverState.g, ZPrime))
@@ -187,9 +189,8 @@ class SatProcedure(
       val itp = SMT.getInterpolant(f1, f2.notSimplify, solverState)
       // TODO: /NOTE itp has as variables X (in general, where to mention this,
       // how to make clear which variables occur for good readability/code clarity)
-      println(s"itp ${itp}")
+      println(s"DEBUG: itp ${itp}")
       solverState.overApproxFStar = _getNextOverApprox(itp)
-      println(s"updated overapprox ${solverState.overApproxFStar}")
     } else {
       println("DEBUG !(f1==>f2)")
     }
@@ -260,13 +261,15 @@ class SatProcedure(
     return remainingPredicates
   }
 
+  def weakenUnderApproximation(solutionToAdd: Model): Unit = {
+    val v = solverState.X.map(solutionToAdd).toVector
+    println(s"DEBUG: adding solution ${v} to U") // TODO
+    // solverState.underApproxF_SLS.addLS(LinearSet(v, Vector()))
+    // TODO:
+    solverState.underApproxF_SLS.addLS(
+      LinearSet(v, Vector(Vector(1, 3), Vector(0, 2)))
+    )
 
-
-
-
-  def weakenUnderApproximation(
-      solutionToAdd: Model,
-      solverState: SolverState
-  ): Unit = {
+    solverState.underApproxF_SLS.linearSets.head.shiftDown(solverState)
   }
 }

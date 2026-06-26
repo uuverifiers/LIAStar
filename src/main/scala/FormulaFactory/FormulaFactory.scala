@@ -7,12 +7,12 @@ class FormulaFactory(val state: SolverState) {
 
   def fLessN(n: Int, Y: Seq[IConstant]): IFormula = {
     if (n == 0) {
-      FormulaFactory.eqZero(Y)
+      Y === 0
     } else {
-      FormulaFactory.eqZero(Y) |
+      Y === 0 |
         state.exVector(Y.length) { h1 =>
           state.exVector(Y.length) { h2 =>
-            FormulaFactory.xEqualYPlusZ(Y, h1, h2) &&&
+            Y === (h1 +++ h2) &&&
               substituteX(state.f, h1) &&&
               fLessN(n - 1, h2)
           }
@@ -34,20 +34,6 @@ class FormulaFactory(val state: SolverState) {
 }
 
 object FormulaFactory {
-  def eqZero(Y: Seq[IConstant]): IFormula = {
-    Y.map(_ === 0).reduce(_ &&& _)
-  }
-  def xEqualYPlusZ(
-      X: Seq[IConstant],
-      Y: Seq[IConstant],
-      Z: Seq[IConstant]
-  ): IFormula = {
-    assume((X.length == Y.length) && (Y.length == Z.length))
-    return (0 until X.length)
-      .map(i => X(i) === Y(i) + Z(i))
-      .reduce(_ & _)
-  }
-
   def conjuncts(f: IFormula): Seq[IFormula] = f match {
     case IBinFormula(IBinJunctor.And, left, right) =>
       conjuncts(left) ++ conjuncts(right)

@@ -11,7 +11,7 @@ import LIAStarSolver.testhelpers.PrincessAssertions
 class SatProcedureTests extends munit.FunSuite {
 
   test("_filterInductivePredicates(1): single predicate") {
-    val api = SimpleAPI.spawn
+    val api = SimpleAPI.spawnWithAssertions
     val X = Seq(api.createConstant("x").asInstanceOf[IConstant])
     val f = X(0) === 1
     val procedure = SatProcedure(api, true, f, X)
@@ -23,7 +23,7 @@ class SatProcedureTests extends munit.FunSuite {
   }
 
   test("_filterInductivePredicates(2)") {
-    val api = SimpleAPI.spawn
+    val api = SimpleAPI.spawnWithAssertions
     val X: Seq[IConstant] =
       api.createConstants("x", 0 until 2) map (_.asInstanceOf[IConstant])
 
@@ -39,7 +39,7 @@ class SatProcedureTests extends munit.FunSuite {
   }
 
   test("_filterInductivePredicates(mixed disjunction)") {
-    val api = SimpleAPI.spawn
+    val api = SimpleAPI.spawnWithAssertions
     val X: Seq[IConstant] =
       api.createConstants("x", 0 until 2) map (_.asInstanceOf[IConstant])
 

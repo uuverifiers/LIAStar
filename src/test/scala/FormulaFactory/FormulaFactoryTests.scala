@@ -4,9 +4,9 @@ import ap.parser._
 import LIAStarSolver.SolverState.SolverState
 import LIAStarSolver.FormulaFactory.FormulaFactory
 
-import LIAStarSolver.testhelpers.PrincessAssertions
+import LIAStarSolver.TestHelpers.TestHelpers
 
-class FormulaFactorTests extends munit.FunSuite with PrincessAssertions {
+class FormulaFactorTests extends munit.FunSuite with TestHelpers {
 
   test("fLessN: single element onedimensional f") {
     val api = SimpleAPI.spawnWithAssertions

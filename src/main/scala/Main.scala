@@ -38,12 +38,12 @@ import LIAStarSolver.SatResult.{SatResult, Sat, Unsat}
   val X: IndexedSeq[IConstant] = api.createConstants("x_", 0 until 2).map(_.asInstanceOf[IConstant])
   val Y: IndexedSeq[IConstant] = api.createConstants("y_", 0 until 2).map(_.asInstanceOf[IConstant])
 
-  println(s"HELP ${(X+++Y)}")
 
   //val X = RichITermSeq(api.createConstants("x_", 0 until 1))
-  // val g: IFormula = X(0) < -2
-  val g: IFormula = X(0) < 2
-  val f: IFormula = X(0) === 1
+  val g: IFormula = X(0) < -2
+  //val g: IFormula = X(0) < 2
+  val f: IFormula = X(0) >= 1
+  //val f: IFormula = X(0) === 1
 
 
 

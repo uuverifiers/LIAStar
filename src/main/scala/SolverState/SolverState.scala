@@ -5,7 +5,8 @@ import ap.SimpleAPI
 import ap.parser.IExpression.{ex, all}
 
 import LIAStarSolver.FormulaFactory.FormulaFactory
-import LIAStarSolver.SemilinearSet.SemilinearSet
+import LIAStarSolver.Linear.SemilinearSet
+import LIAStarSolver.SMT.SMT
 
 class SolverState(
     val solverInstance: SimpleAPI,
@@ -16,7 +17,7 @@ class SolverState(
   require(X.length > 0)
 
   var underApproxFStar: IFormula = X === 0
-  var underApproxF_SLS = SemilinearSet()
+  var underApproxF_SLS = SemilinearSet(Set())
   var allInterpolantConjuncts: Seq[IFormula] = Seq()
 
   var overApproxFStar: IFormula = true
@@ -31,7 +32,7 @@ class SolverState(
   // e.g exVector(2) { v=>v(0)===1&v(1)===1}
   // corresponds to: \exists v0,v1; v0=0 & v1=1
   def exVector(n: Int)(body: Seq[IConstant] => IFormula): IFormula = {
-  // TODO anschauen ob def quanConsts(quan : Quantifier,)
+    // TODO anschauen ob def quanConsts(quan : Quantifier,)
     def recursiveHelper(remaining: Int, vars: List[IConstant]): IFormula = {
       if (remaining == 0)
         body(vars)
@@ -43,7 +44,6 @@ class SolverState(
 
     recursiveHelper(n, Nil)
   }
-
 
   // create n dimensional universally quantified vector for use in a formula
   // e.g allVector(2) { v=>v(0)===1&v(1)===1}
@@ -59,6 +59,27 @@ class SolverState(
     }
 
     recursiveHelper(n, Nil)
+  }
+
+  // function for tests/assertions: test if overApproxFStar is truly an overapproximation of f
+  // TODO: just have this definition in testing???
+  def ___isOverapproximationTest: Boolean = {
+    import SimpleAPI.ProverStatus
+    val formulaFactory = FormulaFactory(this)
+    import formulaFactory._
+    val overApproxCondition1 = X === 0 ==> overApproxFStar
+    val Y = createConstants("y_", X.length)
+    val Z = createConstants("y_", X.length)
+    val overApproxCondition2 =
+      (substituteX(overApproxFStar, Y) &
+        substituteX(f, Z) &
+        X === (Y +++ Z))
+        ==> overApproxFStar
+
+    SMT.isValid(
+      (overApproxCondition1 & overApproxCondition2),
+      this
+    )
   }
 
 }

@@ -1,4 +1,5 @@
 package LIAStarSolver.SatResult
+
 import ap.parser.IConstant
 import ap.basetypes.IdealInt
 

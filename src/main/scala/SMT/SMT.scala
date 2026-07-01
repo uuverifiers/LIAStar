@@ -65,7 +65,7 @@ object SMT {
     val returnRes = if (res == SimpleAPI.ProverStatus.Sat) {
       val evaluator = completeModel
       val model =
-        solverState.X.map { x =>
+        formulaVariables.map { x =>
           x -> evaluator(x).asInstanceOf[IIntLit].value
         }.toMap
 

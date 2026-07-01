@@ -9,7 +9,7 @@ import LIAStarSolver.SolverState.SolverState
 import LIAStarSolver.FormulaFactory.FormulaFactory
 import LIAStarSolver.SMT.SMT
 import LIAStarSolver.SatResult.{SatResult, Sat, Unsat, Model}
-import LIAStarSolver.SemilinearSet.LinearSet
+import LIAStarSolver.Linear.LinearSet
 
 class SatProcedure(
     solverInstance: SimpleAPI,
@@ -55,35 +55,15 @@ class SatProcedure(
     val g_of_XplusY = ConstantSubstVisitor(g, subst)
 
     while (true) {
+      println("\n\nDEBUG: top of while loop \n")
 
       //////////////////////////////
       // check convergence of underapproximation to f*
-      val convergenceCondition = solverState.f & !solverState.underApproxFStar
-      if (SMT.isUnsat(convergenceCondition, solverState)) {
-        println(s"DEBUG convergence of u to f*")
-        // now g&underapproximation is equivalent to g&f*
-        val (
-          proverStatus,
-          modelOption
-        ) =
-          SMT.getProverStatusAndModel(
-            g & solverState.underApproxFStar,
-            solverState.X,
-            solverState
-          )
-        val returnValue = proverStatus match {
-          case ProverStatus.Sat =>
-            Sat(
-              modelOption.get
-            ) // TODO: can there not be a model given, even if sat was returned??
-          case ProverStatus.Unsat => Unsat
-          case _                  =>
-            throw new Exception(
-              "ProverStatus neither Sat or Unsat for g&f*"
-            ) // TODO: Is this really an Exception and even reachable?
-        }
-        return returnValue
+      val convergenceRes = checkUnderApproxConvergence
+      if (convergenceRes.isDefined) {
+        return convergenceRes.get
       }
+
 
       //////////////////////////////
       // strengthen the Overapproximation
@@ -94,7 +74,7 @@ class SatProcedure(
 
       if (SMT.isUnsat(unsatCondForStrengthenOver, solverState)) {
         println("DEBUG: strengthen over")
-        strengthenOverApproximation(nUnfoldings)
+        //strengthenOverApproximation(nUnfoldings) //TODO: uncomment this!!!!!!
       } else {
         println("DEBUG: DONT strengthen over")
       }
@@ -103,25 +83,24 @@ class SatProcedure(
       // check if an exit criteria can be applied with the updated overapproximation
       if (isEarlyUnsat) {
         println(
-          s"DEBUG early unsat with overapprox ${pp(solverState.overApproxFStar)}"
+          s"DEBUG: early unsat with overapprox ${pp(solverState.overApproxFStar)}"
         )
         return Unsat
       }
       val earlySatRes: Option[Model] = isEarlySat
       if (earlySatRes.isDefined) {
         println(
-          s"DEBUG early sat with overapprox ${pp(solverState.overApproxFStar)}"
+          s"DEBUG: early sat with overapprox ${pp(solverState.overApproxFStar)}"
         )
         return Sat(earlySatRes.get)
-      }
-
-      if (isEarlyUnsat) {
-        return Unsat
       }
 
       //////////////////////////////
       // weaken the underapproximation
 
+      
+      //TODO: rename? not testing convergence here, but it is the same formula constructed for convergence
+      val convergenceCondition = solverState.f & !solverState.underApproxFStar 
       val (proverStatus, modelOption) = SMT.getProverStatusAndModel(
         convergenceCondition,
         solverState.X,
@@ -132,8 +111,9 @@ class SatProcedure(
       assert(proverStatus == ProverStatus.Sat && modelOption.isDefined)
       val solution_fAndNotUnderapprox: Model = modelOption.get
 
-      println("DEBUG WEAKEN UNDER")
       weakenUnderApproximation(solution_fAndNotUnderapprox)
+
+      println("\nDEBUG: bottom of while loop \n\n")
 
     }
 
@@ -161,6 +141,39 @@ class SatProcedure(
       case _                => None
     }
   }
+
+  def checkUnderApproxConvergence: Option[SatResult] = {
+    val convergenceCondition = solverState.f & !solverState.underApproxFStar
+    if (SMT.isUnsat(convergenceCondition, solverState)) {
+      // now g&underapproximation is equivalent to g&f*
+      println(s"DEBUG  u has converged to f*")
+      val (
+        proverStatus,
+        modelOption
+      ) =
+        SMT.getProverStatusAndModel(
+          g & solverState.underApproxFStar,
+          solverState.X,
+          solverState
+        )
+      val returnValue = proverStatus match {
+        case ProverStatus.Sat =>
+          Sat(
+            modelOption.get
+          ) // TODO: can there not be a model given, even if sat was returned??
+        case ProverStatus.Unsat => Unsat
+        case _                  =>
+          throw new Exception(
+            "ProverStatus neither Sat or Unsat for g&f*"
+          ) // TODO: Is this really an Exception and even reachable?
+      }
+      Some(returnValue)
+    } else {
+      // u has not yet converged
+      None
+    }
+  }
+
   def strengthenOverApproximation(
       nUnfoldings: Int
   ): Unit = {
@@ -195,6 +208,8 @@ class SatProcedure(
       println("DEBUG !(f1==>f2)")
     }
 
+    // TODO: remove this sanity check at the end of implementation
+    assert(solverState.___isOverapproximationTest)
   }
 
   // TODO: Maybe extract into it's own class??
@@ -263,13 +278,19 @@ class SatProcedure(
 
   def weakenUnderApproximation(solutionToAdd: Model): Unit = {
     val v = solverState.X.map(solutionToAdd).toVector
-    println(s"DEBUG: adding solution ${v} to U") // TODO
+    println(s"DEBUG: WEAKEN UNDER, adding solution ${v} to U") // TODO
     // solverState.underApproxF_SLS.addLS(LinearSet(v, Vector()))
     // TODO:
-    solverState.underApproxF_SLS.addLS(
-      LinearSet(v, Vector(Vector(1, 3), Vector(0, 2)))
+    solverState.underApproxF_SLS = solverState.underApproxF_SLS.addLS(
+      LinearSet(v, Vector())
     )
 
-    solverState.underApproxF_SLS.linearSets.head.shiftDown(solverState)
+    solverState.underApproxF_SLS = solverState.underApproxF_SLS.addLS(
+      LinearSet(Vector(1,0), Vector(Vector(1, 3), Vector(0, 2), Vector(1,2)))//TOOD: REMOVE THIS. add v not (1,0)!!!!!
+    )
+
+    val offsetDownRes = solverState.underApproxF_SLS.linearSets.head.offsetDown(solverState)
+    println(s" offsetDownRes ${offsetDownRes}")
+    // solverState.underApproxF_SLS.linearSets.head.shiftDown(solverState)
   }
 }

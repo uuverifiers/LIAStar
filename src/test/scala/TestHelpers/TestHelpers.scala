@@ -41,17 +41,4 @@ trait TestHelpers extends munit.FunSuite {
     api.pop()
   }
 
-  def equivalentLSOptions(
-      obtained: Option[LinearSet],
-      expected: Option[LinearSet]
-  ) = {
-    (obtained, expected) match {
-      case (Some(x), Some(y)) =>
-        x.a == y.a && x.B.toSet == y.B.toSet && x.B.length==y.B.length
-        //TODO/NOTE duplicates in B ignored. Should i enforce/implement non duplicates later???
-
-      case _ =>
-        obtained == expected
-    }
-  }
 }

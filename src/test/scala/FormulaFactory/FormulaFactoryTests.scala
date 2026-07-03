@@ -16,7 +16,6 @@ class FormulaFactorTests extends munit.FunSuite with TestHelpers {
 
     val state = SolverState(api, true, f, Seq(x))
     val formulaFactory = FormulaFactory(state)
-
     val Y = state.createConstants("y_", 1)
 
     // 0 unfoldings
@@ -29,7 +28,6 @@ class FormulaFactorTests extends munit.FunSuite with TestHelpers {
     val obtained1 = formulaFactory.fLessN(1, Y)
     val expected1 = Y(0) === 0 | Y(0) === 1
     val notExpected1 = Y(0) === 0
-
     assertEquivalent(api, obtained1, expected1)
     assertNotEquivalent(api, obtained1, notExpected1)
 
@@ -55,7 +53,6 @@ class FormulaFactorTests extends munit.FunSuite with TestHelpers {
 
     val state = SolverState(api, true, f, X)
     val formulaFactory = FormulaFactory(state)
-
     val Y = state.createConstants("y_", X.length)
 
     // 0 unfoldings
@@ -63,6 +60,7 @@ class FormulaFactorTests extends munit.FunSuite with TestHelpers {
     val expected0 = (Y(0) === 0 & Y(1) === 0 & Y(2) === 0)
     assertEquivalent(api, obtained0, expected0)
 
+    // 1 unfolding
     val obtained1 = formulaFactory.fLessN(1, Y)
     val expected1 = (
       Y(0) === 0 & Y(1) === 0 & Y(2) === 0
@@ -98,17 +96,6 @@ class FormulaFactorTests extends munit.FunSuite with TestHelpers {
               (Y(0) === x1 + z1) &
               (Y(1) === x2 + z2)
           }
-    //val expected2 =
-      //(Y(0) === 0 & Y(1) === 0) |
-        //(Y(0) + Y(1) >= 1) |
-        //(state.exVector(2) { x =>
-          //state.exVector(2) { z =>
-            //(x(0) + x(1) >= 1) &
-              //(z(0) + z(1) >= 1) &
-              //(Y(0) === x(0) + z(0)) &
-              //(Y(1) === x(1) + z(1))
-          //}
-        //})
     assertEquivalent(api, obtained2, expected2)
   }
 

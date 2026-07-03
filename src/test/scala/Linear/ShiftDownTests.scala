@@ -1,4 +1,4 @@
-import LIAStarSolver.Linear.LinearSet
+import LIAStarSolver.Linear.{LinearSet, SemilinearSet}
 import LIAStarSolver.SolverState.SolverState
 import LIAStarSolver.TestHelpers.TestHelpers
 
@@ -6,6 +6,40 @@ import ap.SimpleAPI
 import ap.parser.IConstant
 
 class ShiftDownTests extends munit.FunSuite with TestHelpers {
+  test("shiftDown: empty B") {
+    val api = SimpleAPI.spawnWithAssertions
+    val X = api.createConstants("x", 0 until 1).map(_.asInstanceOf[IConstant])
+
+    val f = X(0) >= 0
+    val state = SolverState(api, true, f, X)
+
+    val ls = LinearSet(
+      Vector(5),
+      Vector()
+    )
+
+    val expected = None
+    val obtained = ls.shiftDown(state)
+
+    assertEquals(obtained, expected)
+  }
+  test("shiftDown: B only 0") {
+    val api = SimpleAPI.spawnWithAssertions
+    val X = api.createConstants("x", 0 until 1).map(_.asInstanceOf[IConstant])
+
+    val f = X(0) >= 0
+    val state = SolverState(api, true, f, X)
+
+    val ls = LinearSet(
+      Vector(5),
+      Vector(Vector(0))
+    )
+
+    val expected = None
+    val obtained = ls.shiftDown(state)
+
+    assertEquals(obtained, expected)
+  }
   test("shiftDown:  Simple shift") {
     val api = SimpleAPI.spawnWithAssertions
     val X: Seq[IConstant] =
@@ -110,41 +144,6 @@ class ShiftDownTests extends munit.FunSuite with TestHelpers {
     assert(List(expected1, expected2).contains(obtained))
   }
 
-  test("shiftDown: empty B") {
-    val api = SimpleAPI.spawnWithAssertions
-    val X = api.createConstants("x", 0 until 1).map(_.asInstanceOf[IConstant])
-
-    val f = X(0) >= 0
-    val state = SolverState(api, true, f, X)
-
-    val ls = LinearSet(
-      Vector(5),
-      Vector()
-    )
-
-    val expected = None
-    val obtained = ls.shiftDown(state)
-
-    assertEquals(obtained, expected)
-  }
-  test("shiftDown: B only 0") {
-    val api = SimpleAPI.spawnWithAssertions
-    val X = api.createConstants("x", 0 until 1).map(_.asInstanceOf[IConstant])
-
-    val f = X(0) >= 0
-    val state = SolverState(api, true, f, X)
-
-    val ls = LinearSet(
-      Vector(5),
-      Vector(Vector(0))
-    )
-
-    val expected = None
-    val obtained = ls.shiftDown(state)
-
-    assertEquals(obtained, expected)
-  }
-
   test("shiftDown: two-dimensional shift") {
     val api = SimpleAPI.spawnWithAssertions
     val X = api.createConstants("x", 0 until 2).map(_.asInstanceOf[IConstant])
@@ -171,6 +170,74 @@ class ShiftDownTests extends munit.FunSuite with TestHelpers {
 
     val obtained = ls.shiftDown(state)
 
+    assertEquals(obtained, expected)
+  }
+
+  ////////////////////////////////
+  // ShiftDown for SemilinearSet
+
+  test("SLS shiftDown: empty SLS") {
+    val api = SimpleAPI.spawnWithAssertions
+    val X = api.createConstants("x", 0 until 1).map(_.asInstanceOf[IConstant])
+    val f = true
+    val state = SolverState(api, true, f, X)
+
+    val sls = SemilinearSet(Set())
+
+    val obtained = sls.shiftDown(state)
+    val expected = None
+    assertEquals(obtained, expected)
+  }
+  test("SLS shiftDown: one LS with empty B") {
+    val api = SimpleAPI.spawnWithAssertions
+    val X = api.createConstants("x", 0 until 1).map(_.asInstanceOf[IConstant])
+    val f = true
+    val state = SolverState(api, true, f, X)
+
+    val ls1 = LinearSet(Vector(0), Vector())
+
+    val sls = SemilinearSet(Set(ls1))
+
+    val obtained = sls.shiftDown(state)
+    val expected = None
+    assertEquals(obtained, expected)
+  }
+  test("SLS shiftDown: single shiftdownable ls") {
+    val api = SimpleAPI.spawnWithAssertions
+    val X = api.createConstants("x", 0 until 1).map(_.asInstanceOf[IConstant])
+    val f = true
+    val state = SolverState(api, true, f, X)
+
+    val ls1 = LinearSet(Vector(4), Vector(Vector(9), Vector(2)))
+    val sls = SemilinearSet(Set(ls1))
+
+    val obtained = sls.shiftDown(state)
+    val expected = Some(
+      SemilinearSet(Set(LinearSet(Vector(2), Vector(Vector(9), Vector(2)))))
+    )
+    assertEquals(obtained, expected)
+  }
+  test("SLS shiftDown: multiple ls, one shiftable") {
+    val api = SimpleAPI.spawnWithAssertions
+    val X = api.createConstants("x", 0 until 1).map(_.asInstanceOf[IConstant])
+    val f = true
+    val state = SolverState(api, true, f, X)
+
+    val ls1 = LinearSet(Vector(4), Vector(Vector(-9), Vector(8)))
+    val ls2 = LinearSet(Vector(4), Vector(Vector(9), Vector(2)))
+    val ls3 = LinearSet(Vector(0), Vector(Vector(9), Vector(2)))
+    val sls = SemilinearSet(Set(ls1, ls2, ls3))
+
+    val obtained = sls.shiftDown(state)
+    val expected = Some(
+      SemilinearSet(
+        Set(
+          LinearSet(Vector(2), Vector(Vector(9), Vector(2))),
+          LinearSet(Vector(4), Vector(Vector(-9), Vector(8))),
+          LinearSet(Vector(0), Vector(Vector(9), Vector(2)))
+        )
+      )
+    )
     assertEquals(obtained, expected)
   }
 }

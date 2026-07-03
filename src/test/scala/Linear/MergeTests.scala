@@ -19,8 +19,8 @@ class MergeTests extends munit.FunSuite with TestHelpers {
     val ls1 = LinearSet(Vector(5, -4), Vector(Vector(1, 2)))
     val ls2 = LinearSet(Vector(3, -9), Vector(Vector(2, 0)))
 
-    val expected = None
     val obtained = ls1.merge(ls2, state)
+    val expected = None
     assertEquals(obtained, expected)
     assertEquals(obtained, ls2.merge(ls1, state))
   }
@@ -34,13 +34,13 @@ class MergeTests extends munit.FunSuite with TestHelpers {
     val ls1 = LinearSet(Vector(3, -40), Vector(Vector(1, 2)))
     val ls2 = LinearSet(Vector(3, -9), Vector(Vector(2, 0)))
 
+    val obtained = ls1.merge(ls2, state)
     val expected = Some(
       LinearSet(
         Vector(3, -9),
         Vector(Vector(1, 2), Vector(2, 0), Vector(0, -31))
       )
     )
-    val obtained = ls1.merge(ls2, state)
     assertEquals(obtained, expected)
   }
 
@@ -53,9 +53,9 @@ class MergeTests extends munit.FunSuite with TestHelpers {
     val ls1 = LinearSet(Vector(10, -10), Vector(Vector(1, -1)))
     val ls2 = LinearSet(Vector(5, -5), Vector())
 
+    val obtained = ls1.merge(ls2, state)
     val expected =
       Some(LinearSet(Vector(5, -5), Vector(Vector(1, -1), Vector(5, -5))))
-    val obtained = ls1.merge(ls2, state)
     assertEquals(obtained, expected)
     assertEquals(
       obtained,
@@ -72,11 +72,10 @@ class MergeTests extends munit.FunSuite with TestHelpers {
     val ls2 = LinearSet(Vector(9), Vector(Vector(3)))
 
     val expected = None
-    val obtained = ls1.merge(ls2, state)
-    assertEquals(obtained, expected)
+    assertEquals(ls1.merge(ls2, state), expected)
     assertEquals(
-      obtained,
-      ls2.merge(ls1, state)
+      ls2.merge(ls1, state),
+      expected
     ) // check "direction" doesn't matter
   }
 
@@ -94,7 +93,6 @@ class MergeTests extends munit.FunSuite with TestHelpers {
       Some(
         LinearSet(Vector(2, 3), Vector(Vector(1, 0)))
       ) // Vector(0,0) in B doesn't make a difference
-
     assertEquals(ls1.merge(ls2, state), expected)
   }
   test("LS merge: two empty B's") {
@@ -109,7 +107,6 @@ class MergeTests extends munit.FunSuite with TestHelpers {
 
     val expected =
       Some(LinearSet(Vector(2), Vector(Vector(3))))
-
     assertEquals(ls1.merge(ls2, state), expected)
     assertEquals(ls2.merge(ls1, state), expected)
   }
@@ -125,7 +122,6 @@ class MergeTests extends munit.FunSuite with TestHelpers {
 
     val expected =
       Some(LinearSet(Vector(2), Vector(Vector(3), Vector(9))))
-
     assertEquals(ls1.merge(ls2, state), expected)
     assertEquals(ls2.merge(ls1, state), expected)
   }
@@ -141,7 +137,6 @@ class MergeTests extends munit.FunSuite with TestHelpers {
 
     val expected =
       Some(LinearSet(Vector(2), Vector(Vector(3), Vector(9))))
-
     assertEquals(ls1.merge(ls2, state), expected)
     assertEquals(ls2.merge(ls1, state), expected)
   }
@@ -159,7 +154,6 @@ class MergeTests extends munit.FunSuite with TestHelpers {
         Vector(0, 1)
       )
     )
-
     val ls2 = LinearSet(
       Vector(4, 3),
       Vector(
@@ -179,28 +173,12 @@ class MergeTests extends munit.FunSuite with TestHelpers {
         )
       )
     )
-
     assertEquals(ls1.merge(ls2, state), expected)
   }
 
   ////////////////////////////////////
   // Merge on semilinear set
   // TODO:
-  test("devTesting") { // TODO:::TODO
-    val api = SimpleAPI.spawnWithAssertions
-    val X: Seq[IConstant] =
-      api.createConstants("x", 0 until 1) map (_.asInstanceOf[IConstant])
-    val f = true
-    val state = SolverState(api, true, f, X)
-    val ls1 = LinearSet(Vector(1), Vector(Vector(4)))
-    val ls2 = LinearSet(Vector(9), Vector(Vector(3)))
-    val ls3 = LinearSet(Vector(-1), Vector(Vector(3)))
-    val sls = SemilinearSet(Set(ls1, ls2, ls3))
-
-    println("START OF PLAYING AROUND WITH TESTINGJ")
-    val res = sls.merge(state)
-    println(s"final res ${res}")
-  }
   test("SLS merge: one mergable set-pair") {
     val api = SimpleAPI.spawnWithAssertions
     val X: Seq[IConstant] =
@@ -212,6 +190,7 @@ class MergeTests extends munit.FunSuite with TestHelpers {
     val ls3 = LinearSet(Vector(-1), Vector(Vector(3)))
     val sls = SemilinearSet(Set(ls1, ls2, ls3))
 
+    val obtained = sls.merge(state)
     val expected = Some(
       SemilinearSet(
         Set(
@@ -220,7 +199,6 @@ class MergeTests extends munit.FunSuite with TestHelpers {
         )
       )
     )
-    val obtained = sls.merge(state)
     assertEquals(obtained, expected)
   }
   test("SLS merge: no  mergable set-pair") {
@@ -248,8 +226,8 @@ class MergeTests extends munit.FunSuite with TestHelpers {
     val state = SolverState(api, true, f, X)
     val sls = SemilinearSet(Set())
 
-    val expected = None
     val obtained = sls.merge(state)
+    val expected = None
     assertEquals(obtained, expected)
   }
   test("SLS merge: one LS") {
@@ -304,7 +282,6 @@ class MergeTests extends munit.FunSuite with TestHelpers {
         )
       )
     )
-
     assert(List(expected1, expected2, expected3).contains(obtained))
   }
 

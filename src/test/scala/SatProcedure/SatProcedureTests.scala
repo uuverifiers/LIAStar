@@ -17,6 +17,7 @@ class SatProcedureTests extends munit.FunSuite {
     val procedure = SatProcedure(api, true, f, X)
 
     val predicates = Seq(X(0) >= 0)
+
     val obtained = procedure._filterInductivePredicates(predicates)
     val expected = Seq(X(0) >= 0)
     assertEquals(obtained, expected)
@@ -26,12 +27,12 @@ class SatProcedureTests extends munit.FunSuite {
     val api = SimpleAPI.spawnWithAssertions
     val X: Seq[IConstant] =
       api.createConstants("x", 0 until 2) map (_.asInstanceOf[IConstant])
-
     val f = X(0) === 2 & X(1) > 0
     val procedure = SatProcedure(api, true, f, X)
 
     val predicates: Seq[IFormula] =
       Seq(X(0) >= 0, X(1) <= 10, (X(1) > -4 | X(0) === 3), X(1) > -2)
+
     val obtained = procedure._filterInductivePredicates(predicates)
     val expected = Seq(X(0) >= 0, (X(1) > -4 | X(0) === 3), X(1) > -2)
     assertEquals(obtained.toSet, expected.toSet)
@@ -43,7 +44,6 @@ class SatProcedureTests extends munit.FunSuite {
     val api = SimpleAPI.spawnWithAssertions
     val X: Seq[IConstant] =
       api.createConstants("x", 0 until 2) map (_.asInstanceOf[IConstant])
-
     val f = X(0) === 2 & X(1) > 0
     val procedure = SatProcedure(api, true, f, X)
 
@@ -54,15 +54,12 @@ class SatProcedureTests extends munit.FunSuite {
         (X(0) === 0 | X(1) > 0)
       )
 
-
-
-
     val obtained = procedure._filterInductivePredicates(predicates)
     val expected = Seq(
       X(0) >= 0,
       X(1) > -2,
     )
-    // remove clause (X(0) === 0 | X(1) > 0) since e.g. for X=(0,-1)Y=(2,1)
+    // remove the clause (X(0) === 0 | X(1) > 0) since e.g. for X=(0,-1)Y=(2,1)
      // !(predicates(X) & f(Y) => X(0)+Y(0) ==2 & X(1)+Y(1) > 0)
 
     assertEquals(obtained.toSet, expected.toSet)
@@ -75,9 +72,9 @@ class SatProcedureTests extends munit.FunSuite {
     val api = SimpleAPI.spawnWithAssertions
     val X: Seq[IConstant] =
       api.createConstants("x", 0 until 2) map (_.asInstanceOf[IConstant])
-
     val f = X(0) === 2 & X(1) > 0
     val procedure = SatProcedure(api, true, f, X)
+
     assert(procedure.solverState.___isOverapproximationTest)
     procedure.solverState.overApproxFStar = X === 0 | X(0)>0
     assert(procedure.solverState.___isOverapproximationTest)
@@ -90,12 +87,4 @@ class SatProcedureTests extends munit.FunSuite {
     assert(!(procedure.solverState.___isOverapproximationTest))
 
   }
-  test("strengthenOverApproximation: initial Overapproximation correct") {
-    val api = SimpleAPI.spawnWithAssertions
-    val X: Seq[IConstant] =
-      api.createConstants("x", 0 until 2) map (_.asInstanceOf[IConstant])
-
-    val f = X(0) === 2 & X(1) > 0
-    val procedure = SatProcedure(api, true, f, X)
-}
 }

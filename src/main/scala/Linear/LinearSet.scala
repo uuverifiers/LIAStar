@@ -41,9 +41,7 @@ class LinearSet(
   // if applicapable, return Some(newLinearSet), where newLinearSet is the result of the application.
   // return None, if shiftDown can't be applied
   def shiftDown(solverState: SolverState): Option[LinearSet] = {
-    println("DEBUG SHIFT DOWN")
     def conditionIsValidFor(b: Vector[IdealInt]): Boolean = {
-      println("DEBUG conditionIsValidFor")
       // check if Forall Lamda; f(a - b + Lambda*B) is valid
       // (where Lambda*B is Vector*Matrix multiplication
 
@@ -84,7 +82,6 @@ class LinearSet(
   // if applicapable, return Some(newLinearSet), where newLinearSet is the result of the application.
   // return None, if shiftDown can't be applied
   def offsetDown(solverState: SolverState): Option[LinearSet] = {
-    println(s"DEBUG conditionIsValidFor on ${this}")
     def conditionIsValidFor(
         b1: Vector[IdealInt],
         b2: Vector[IdealInt]

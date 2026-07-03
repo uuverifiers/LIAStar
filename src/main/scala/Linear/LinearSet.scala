@@ -22,11 +22,6 @@ class LinearSet(
     BWithDuplicatesAnd0.forall(_.length == a.length),
     s"All vectors in B must have length ${a.length}"
   )
-  // 0 vector not allowed in B (otherwise offsetDown/shiftDown could be applied infinitely often
-  // require(
-  // B.forall(b => b.exists(_ != IdealInt.ZERO)),
-  // "0 vector not allowed in B"
-  // )
 
   // BWithDuplicates can contain duplicates and 0 vector.
   // These are removed in B and B is turned into a canonical representation
@@ -40,10 +35,7 @@ class LinearSet(
     case ls: LinearSet => a == ls.a && B == ls.B
     case _             => false
   }
-
   override def hashCode(): Int = (a, B).##
-  // if (!B.contains(g))
-  // B = B :+ g
 
   // try to apply shift down rule.
   // if applicapable, return Some(newLinearSet), where newLinearSet is the result of the application.
@@ -155,18 +147,26 @@ class LinearSet(
       val Lambdas2 = solverState.createConstants("lambda2_", ls2.B.length)
       val lambda3 = solverState.solverInstance.createConstant("lambda3")
 
-      val Lambdas1B1: Seq[ITerm] = ls1.B.transpose.map { col =>
-        (col zip Lambdas1)
-          .map { case (bij: IdealInt, lam: IConstant) => lam * bij }
-          .reduceOption(_ + _)
-          .getOrElse(IExpression.i(0))
-      }
-      val Lambdas2B2: Seq[ITerm] = ls1.B.transpose.map { col =>
-        (col zip Lambdas2)
-          .map { case (bij: IdealInt, lam: IConstant) => lam * bij }
-          .reduceOption(_ + _)
-          .getOrElse(IExpression.i(0))
-      }
+      val Lambdas1B1: Seq[ITerm] =
+        if (ls1.B.isEmpty)
+          Vector.fill(ls1.a.length)(IExpression.i(0))
+        else
+          ls1.B.transpose.map { col =>
+            (col zip Lambdas1)
+              .map { case (bij: IdealInt, lam: IConstant) => lam * bij }
+              .reduceOption(_ + _)
+              .getOrElse(IExpression.i(0))
+          }
+      val Lambdas2B2: Seq[ITerm] =
+        if (ls2.B.isEmpty)
+          Vector.fill(ls2.a.length)(IExpression.i(0))
+        else
+          ls2.B.transpose.map { col =>
+            (col zip Lambdas2)
+              .map { case (bij: IdealInt, lam: IConstant) => lam * bij }
+              .reduceOption(_ + _)
+              .getOrElse(IExpression.i(0))
+          }
       val a1_minus_a2 = vecMinus(ls1.a, ls2.a)
       val substMap: Map[ConstantTerm, ITerm] = solverState.X.indices.map { i =>
         solverState.X(i).c ->

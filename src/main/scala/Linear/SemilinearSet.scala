@@ -7,9 +7,14 @@ import ap.basetypes.IdealInt
 import LIAStarSolver.SolverState.SolverState
 import LIAStarSolver.SMT.SMT
 
-class SemilinearSet(val linearSets: Set[LinearSet]) {
+class SemilinearSet(val linearSets: Set[LinearSet]) { // evtl deterministich TODO
 
   override def toString(): String = s"SLS(${linearSets.mkString(",")}"
+  override def equals(other: Any): Boolean = other match {
+    case sls: SemilinearSet => this.linearSets == sls.linearSets
+    case _             => false
+  }
+  override def hashCode(): Int = linearSets.##
 
   // return the semilinear set recieved by adding ls
   def addLS(ls: LinearSet): SemilinearSet = {

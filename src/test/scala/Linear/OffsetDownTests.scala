@@ -34,7 +34,7 @@ class OffsetDownTests extends munit.FunSuite with TestHelpers {
 
     val obtained = ls.offsetDown(state)
 
-    assertEquivalentLSOptions(obtained, expected)
+    assertEquals(obtained, expected)
   }
 
   test("offsetDown: simple replacement 2d and reversed order") {
@@ -72,8 +72,8 @@ class OffsetDownTests extends munit.FunSuite with TestHelpers {
     val obtained = ls.offsetDown(state)
     val obtainedReversed = ls.offsetDown(state)
 
-    assertEquivalentLSOptions(obtained, expected)
-    assertEquivalentLSOptions(obtainedReversed, expected)
+    assertEquals(obtained, expected)
+    assertEquals(obtainedReversed, expected)
   }
 
   test("offsetDown: no b1 lessThan b2") {
@@ -96,7 +96,7 @@ class OffsetDownTests extends munit.FunSuite with TestHelpers {
 
     val obtained = ls.offsetDown(state)
 
-    assertEquivalentLSOptions(obtained, expected)
+    assertEquals(obtained, expected)
   }
 
   test("offsetDown: negative and equal coordinates") {
@@ -127,7 +127,23 @@ class OffsetDownTests extends munit.FunSuite with TestHelpers {
 
     val obtained = ls.offsetDown(state)
 
-    assertEquivalentLSOptions(obtained, expected)
+    assertEquals(obtained, expected)
+  }
+  test("offsetDown: Empty B") {
+    val api = SimpleAPI.spawnWithAssertions
+    val X = api.createConstants("x", 0 until 2).map(_.asInstanceOf[IConstant])
+    val f = (X(0) >= 0) & (X(1) <= 0)
+    val state = SolverState(api, true, f, X)
+
+    val ls = LinearSet(
+      Vector(4, 0),
+      Vector()
+    )
+
+    val expected = None
+    val obtained = ls.offsetDown(state)
+
+    assertEquals(obtained, expected)
   }
 
 }

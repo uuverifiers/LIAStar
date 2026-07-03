@@ -18,7 +18,7 @@ class ShiftDownTests extends munit.FunSuite with TestHelpers {
       Some(LinearSet(Vector(3), Vector(Vector(2))))
     val obtained: Option[LinearSet] = ls.shiftDown(state)
 
-    assertEquivalentLSOptions(obtained, expected)
+    assertEquals(obtained, expected)
   }
 
   test("shiftDown: shift to zero") {
@@ -33,7 +33,7 @@ class ShiftDownTests extends munit.FunSuite with TestHelpers {
     val expected = Some(LinearSet(Vector(0), Vector(Vector(2))))
     val obtained = ls.shiftDown(state)
 
-    assert(equivalentLSOptions(obtained, expected))
+    assertEquals(obtained, expected)
   }
 
   test("shiftDown: no generator smaller than a") {
@@ -48,7 +48,7 @@ class ShiftDownTests extends munit.FunSuite with TestHelpers {
     val expected: Option[LinearSet] = None
     val obtained = ls.shiftDown(state)
 
-    assertEquivalentLSOptions(obtained, expected)
+    assertEquals(obtained, expected)
   }
 
   test("shiftDown: condition not valid") {
@@ -64,7 +64,7 @@ class ShiftDownTests extends munit.FunSuite with TestHelpers {
     val expected: Option[LinearSet] = None
     val obtained = ls.shiftDown(state)
 
-    assertEquivalentLSOptions(obtained, expected)
+    assertEquals(obtained, expected)
   }
   test("shiftDown: multiple applicable generator") {
     val api = SimpleAPI.spawnWithAssertions
@@ -107,14 +107,10 @@ class ShiftDownTests extends munit.FunSuite with TestHelpers {
       )
     val obtained = ls.shiftDown(state)
 
-    // TODO: make this print expected, obtained, if assertion fails
-    assert(
-      equivalentLSOptions(obtained, expected1) ||
-        equivalentLSOptions(obtained, expected2)
-    )
+    assert(List(expected1, expected2).contains(obtained))
   }
 
-  test("shiftDown: empty generator set") {
+  test("shiftDown: empty B") {
     val api = SimpleAPI.spawnWithAssertions
     val X = api.createConstants("x", 0 until 1).map(_.asInstanceOf[IConstant])
 
@@ -126,10 +122,27 @@ class ShiftDownTests extends munit.FunSuite with TestHelpers {
       Vector()
     )
 
-    val expected: Option[LinearSet] = None
+    val expected = None
     val obtained = ls.shiftDown(state)
 
-    assertEquivalentLSOptions(obtained, expected)
+    assertEquals(obtained, expected)
+  }
+  test("shiftDown: B only 0") {
+    val api = SimpleAPI.spawnWithAssertions
+    val X = api.createConstants("x", 0 until 1).map(_.asInstanceOf[IConstant])
+
+    val f = X(0) >= 0
+    val state = SolverState(api, true, f, X)
+
+    val ls = LinearSet(
+      Vector(5),
+      Vector(Vector(0))
+    )
+
+    val expected = None
+    val obtained = ls.shiftDown(state)
+
+    assertEquals(obtained, expected)
   }
 
   test("shiftDown: two-dimensional shift") {
@@ -158,6 +171,6 @@ class ShiftDownTests extends munit.FunSuite with TestHelpers {
 
     val obtained = ls.shiftDown(state)
 
-    assertEquivalentLSOptions(obtained, expected)
+    assertEquals(obtained, expected)
   }
 }

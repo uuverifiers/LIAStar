@@ -5,7 +5,7 @@ import LIAStarSolver.SatResult.Model
 import ap.parser._
 import ap.basetypes.IdealInt
 import ap.SimpleAPI
-import ap.SimpleAPI.ProverStatus
+import ap.SimpleAPI.{ProverStatus, NoModelException}
 
 object SMT {
 
@@ -55,32 +55,34 @@ object SMT {
     }
   }
 
-  // return ProverStatus as well as a Model, if ProverStatus.Sat
+  // return ProverStatus as well as a Model, if ProverStatus.Sat and it can be constructed by Princess!
+  // (so sat and no Model is a possibility)
   def getProverStatusAndModel(
       formula: IFormula,
       formulaVariables: Seq[IConstant],
       solverState: SolverState
   ): (ProverStatus.Value, Option[Model]) = {
+    println(
+      s"DEBUG______: getProverStatusAndModel for f ${SimpleAPI.pp(formula)}"
+    )
     import solverState.solverInstance._
     push()
     !!(formula)
     val res = ???
     val returnRes = if (res == SimpleAPI.ProverStatus.Sat) {
-      val model: Model =
-        formulaVariables.map { x =>
-          x -> eval(x)
-        }.toMap
-      
 
-      // TODO: completeModel can fail :C. What is the difference to eval (which seems to work)?????
+      try {
+        val model: Model =
+          formulaVariables.map { x =>
+            x -> eval(x)
+          }.toMap
+        (res, Some(model))
+      } catch {
+        case _: NoModelException.type =>
+          // SAT but Princess cannot produce a model
+          (res, None)
+      }
 
-      //val evaluator = completeModel
-      // val model: Model=
-      // formulaVariables.map { x =>
-      // x -> evaluator(x).asInstanceOf[IIntLit].value
-      // }.toMap
-
-      (res, Some(model))
     } else {
       (res, None)
     }

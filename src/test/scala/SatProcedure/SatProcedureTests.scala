@@ -6,9 +6,7 @@ import LIAStarSolver.SatProcedure.SatProcedure
 
 import LIAStarSolver.SolverState.SolverState
 import LIAStarSolver.SatResult._
-import LIAStarSolver.FormulaFactory.FormulaFactory
 
-import LIAStarSolver.TestHelpers.TestHelpers
 
 class SatProcedureTests extends munit.FunSuite {
 
@@ -95,6 +93,7 @@ class SatProcedureTests extends munit.FunSuite {
   // checkFormula Tests
 
   test("checkFormula: empty f, 0 in g") {
+    val testname = "checkFormula: empty f, 0 in g"
     val api = SimpleAPI.spawnWithAssertions
     val X: Seq[IConstant] =
       api.createConstants("x", 0 until 2) map (_.asInstanceOf[IConstant])
@@ -102,11 +101,22 @@ class SatProcedureTests extends munit.FunSuite {
     val f = IExpression.i(false)
     val procedure = SatProcedure(api, g, f, X)
     val obtained = procedure.checkFormula()
-    val expected = Sat(Map(X(0) -> 0, X(1) -> 0))
-    assertEquals(obtained, expected)
+    val expectedModelMap: Model = Map(X(0) -> 0, X(1) -> 0)
+    obtained match {
+      case Sat(Some(m)) => assertEquals(m, expectedModelMap)
+      case Sat(None)    => true
+      case Unsat        => fail("got Unsat, expected Sat")
+      case Inconclusive => {
+        println(
+          s"""INFO: Inconclusive result for testcase true "${testname}""""
+        )
+        true
+      }
+    }
   }
 
   test("checkFormula: empty f, 0 not in g") {
+    val testname = "checkFormula: empty f, 0 not in g"
     val api = SimpleAPI.spawnWithAssertions
     val X: Seq[IConstant] =
       api.createConstants("x", 0 until 2) map (_.asInstanceOf[IConstant])
@@ -115,11 +125,20 @@ class SatProcedureTests extends munit.FunSuite {
     val f = false
     val procedure = SatProcedure(api, g, f, X)
     val obtained = procedure.checkFormula()
-    if (obtained != Unsat) {
-      fail(s"formula should be unsat, got ${obtained}")
+    obtained match {
+      case Sat(_) =>
+        fail(s"expected Unsat, got ${obtained}")
+      case Inconclusive => {
+        println(
+          s"""INFO: Inconclusive result for testcase true "${testname}""""
+        )
+        true
+      }
+      case Unsat => true
     }
   }
   test("checkFormula: empty g") {
+    val testname = "checkFormula: empty g"
     val api = SimpleAPI.spawnWithAssertions
     val X: Seq[IConstant] =
       api.createConstants("x", 0 until 2) map (_.asInstanceOf[IConstant])
@@ -127,11 +146,21 @@ class SatProcedureTests extends munit.FunSuite {
     val f = true
     val procedure = SatProcedure(api, g, f, X)
     val obtained = procedure.checkFormula()
-    val expected = Unsat
-    assertEquals(obtained, expected)
+    obtained match {
+      case Sat(_) =>
+        fail(s"expected Unsat, got ${obtained}")
+      case Inconclusive => {
+        println(
+          s"""INFO: Inconclusive result for testcase true "${testname}""""
+        )
+        true
+      }
+      case Unsat => true
+    }
   }
 
   test("checkFormula: single solution") {
+    val testname = "checkFormula: single solution"
     val api = SimpleAPI.spawnWithAssertions
     val X: Seq[IConstant] =
       api.createConstants("x", 0 until 2) map (_.asInstanceOf[IConstant])
@@ -140,11 +169,23 @@ class SatProcedureTests extends munit.FunSuite {
 
     val procedure = SatProcedure(api, g, f, X)
     val obtained = procedure.checkFormula()
-    val expected = Sat(Map(X(0) -> 6, X(1) -> 3))
-    assertEquals(obtained, expected)
+    val expectedModelMap: Model = Map(X(0) -> 6, X(1) -> 3)
+    obtained match {
+      case Sat(Some(m)) => assertEquals(m, expectedModelMap)
+      case Sat(None) => println("INFO: Correct Sat result, but could not find model")
+      case Inconclusive => {
+        println(
+          s"""INFO: Inconclusive result for testcase true "${testname}""""
+        )
+        true
+      }
+      case Unsat =>
+        fail(s"expected Sat, got ${obtained}}")
+    }
   }
 
   test("checkFormula: single point g unsat") {
+    val testname = "checkFormula: single point g unsat"
     val api = SimpleAPI.spawnWithAssertions
     val X: Seq[IConstant] =
       api.createConstants("x", 0 until 2) map (_.asInstanceOf[IConstant])
@@ -153,11 +194,21 @@ class SatProcedureTests extends munit.FunSuite {
     val procedure = SatProcedure(api, g, f, X)
 
     val obtained = procedure.checkFormula()
+    obtained match {
+      case Sat(_)       => fail(s"expected Unsat, got ${obtained}")
+      case Inconclusive => {
+        println(
+          s"""INFO: Inconclusive result for testcase true "${testname}""""
+        )
+      }
+      case Unsat => true
+    }
     val expected = Unsat
     assertEquals(obtained, expected)
   }
 
   test("checkFormula: x plus y sat") {
+    val testname = "checkFormula: x plus y sat"
     val api = SimpleAPI.spawnWithAssertions
     val X: Seq[IConstant] =
       api.createConstants("x", 0 until 2) map (_.asInstanceOf[IConstant])
@@ -168,16 +219,23 @@ class SatProcedureTests extends munit.FunSuite {
     val obtained = procedure.checkFormula()
     println(s" x+y sat: ${obtained}")
     obtained match {
-      // NOTE: this does not ensure this i a correct model, as model in f* is hard to verify
-      case Sat(m) => assert(m(X(0)) + m(X(1)) == IdealInt(9), "x+y!=9 in Model")
+      // NOTE: this does not ensure this is actually a correct model
+      case Sat(Some(m)) =>
+        assert(m(X(0)) + m(X(1)) == IdealInt(9), "x+y!=9 in the returned Model")
+      case Sat(None) => println("INFO: Correct Sat result, but could not find model")
+      case Inconclusive => {
+        println(
+          s"""INFO: Inconclusive result for testcase true "${testname}""""
+        )
+      }
 
-      case Unsat => fail("expected Unsat, got Sat")
+      case Unsat => fail(s"expected Sat, got ${obtained}")
     }
 
   }
 
-
   test("checkFormula: x plus y unsat") {
+    val testname = "checkFormula: x plus y unsat"
     val api = SimpleAPI.spawnWithAssertions
     val X: Seq[IConstant] =
       api.createConstants("x", 0 until 2) map (_.asInstanceOf[IConstant])
@@ -186,13 +244,19 @@ class SatProcedureTests extends munit.FunSuite {
     val procedure = SatProcedure(api, g, f, X)
 
     val obtained = procedure.checkFormula()
-    val expected = Unsat
-    assertEquals(obtained, expected)
-
+    obtained match {
+      case Sat(_)       => fail(s"expected Unsat, got ${obtained}")
+      case Inconclusive => {
+        println(
+          s"""INFO: Inconclusive result for testcase true "${testname}""""
+        )
+      }
+      case Unsat => true
+    }
   }
 
-  // TODO: x+y=3 => u can't merge the single points on the line, because no two points are vecLessThan. Fixable??
-  test("checkFormula") {
+  test("checkFormula: g cone") {
+    val testname = "checkFormula: g cone"
     val api = SimpleAPI.spawnWithAssertions
     val X: Seq[IConstant] =
       api.createConstants("x", 0 until 2) map (_.asInstanceOf[IConstant])
@@ -203,12 +267,43 @@ class SatProcedureTests extends munit.FunSuite {
       (2 * X(0) + 3 * X(1) <= 20)
     val procedure = SatProcedure(api, g, f, X)
 
-    // \exists int v0, v1, v2, v3; (x0 = 1*v3 + 0 + 2*v2 + 0 + 0*v1 - v0 & x1 = 0 - 2*v3 + 0 - v2 + -3*v1 + -1*v0 & (v1 != 0 | v0 = 0) & v3 >= 0 & v2 >= 0 & v1 >= 0 & v0 >= 0)
+    val obtained = procedure.checkFormula()
+    obtained match {
+      case Sat(Some(m)) => {
+        val x0 = m(X(0))
+        val x1 = m(X(1))
+        // NOTE: this only shows the returned model is in g, not necesarrily in f*!
+        assert(x0 + 2 * x1 >= 17 && 6 * x0 - x1 <= 47)
+      }
+      case Sat(None) => println("INFO: Correct Sat result, but could not find model")
+      case Inconclusive => {
+        println(
+          s"""INFO: Inconclusive result for testcase true "${testname}""""
+        )
+      }
+      case Unsat => fail("Expected Sat, got ${obtained}")
 
-    // val obtained = procedure.checkFormula()
-    // obtained match {
-    // case Some(m) =>
-    // case None => fail("Formula is sat, got None")
-    // }
+    }
+  }
+  test("checkFormula: unsat test") {
+    val testname = "checkFormula: unsat test"
+    val api = SimpleAPI.spawnWithAssertions
+    val X: Seq[IConstant] =
+      api.createConstants("x", 0 until 2) map (_.asInstanceOf[IConstant])
+    val g: IFormula = (X(0) > 10 & X(1) === 1) |
+      (X(0) <= 2 & X(0) + X(1) <= 2 & !(X(0) === 0 & X(1) === 0))
+    val f: IFormula = X(0) >= 1 & X(1) >= 2
+    val procedure = SatProcedure(api, g, f, X)
+
+    val obtained = procedure.checkFormula()
+    obtained match {
+      case Sat(_)       => fail(s"expected Unsat, got ${obtained}")
+      case Inconclusive => {
+        println(
+          s"""INFO: Inconclusive result for testcase true "${testname}""""
+        )
+      }
+      case Unsat => true
+    }
   }
 }

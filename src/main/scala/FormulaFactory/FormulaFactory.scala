@@ -119,10 +119,6 @@ class FormulaFactory(val state: SolverState) {
 
       val starLIABody =
         equality &&& implication &&& muNonNegative &&& lambdasNonNegative
-      println(s"DEBUG_: equality ${equality}")
-      println(s"DEBUG_: implication ${implication}")
-      println(s"DEBUG_: muNonNegative ${muNonNegative}")
-      println(s"DEBUG_: lambdasNonNegative ${lambdasNonNegative}")
       val consts = (mu +: lambdas).flatten.map(_.c)
       val quantified = IExpression.quanConsts(
         IExpression.Quantifier.EX,

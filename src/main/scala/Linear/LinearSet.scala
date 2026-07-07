@@ -6,6 +6,7 @@ import ap.basetypes.IdealInt
 import ap.parser.IExpression.RichITermSeq
 
 import LIAStarSolver.SolverState.SolverState
+import LIAStarSolver.FormulaFactory.FormulaFactory
 import LIAStarSolver.SMT.SMT
 def vecLessThan(a: Vector[IdealInt], b: Vector[IdealInt]): Boolean = {
   a.zip(b).forall((a, b) => (0 <= a && a <= b) || (0 >= a && a >= b))
@@ -47,13 +48,14 @@ class LinearSet(
 
       val lambdas = solverState.createConstants("lambda_", B.length)
 
-      val lambdaB: Seq[ITerm] =
-        B.transpose.map { col =>
-          (col zip lambdas)
-            .map { case (bij, lam) => lam * bij }
-            .reduceOption(_ + _)
-            .getOrElse(IExpression.i(0))
-        }
+      val lambdaB: Seq[ITerm] =FormulaFactory.lambdaTimesB(lambdas, B, a.length)
+
+        //B.transpose.map { col =>
+          //(col zip lambdas)
+            //.map { case (bij, lam) => lam * bij }
+            //.reduceOption(_ + _)
+            //.getOrElse(IExpression.i(0))
+        //}
       val substMap: Map[ConstantTerm, ITerm] =
         solverState.X.indices.map { i =>
           solverState.X(i).c ->
@@ -96,12 +98,7 @@ class LinearSet(
       val lambdas = solverState.createConstants("lambda_", B.length)
       val BPrime = B.filterNot(_ == b1) :+ vecMinus(b1, b2)
 
-      val lambdaBPrime: Seq[ITerm] = BPrime.transpose.map { col =>
-        (col zip lambdas)
-          .map { case (bij: IdealInt, lam: IConstant) => lam * bij }
-          .reduceOption(_ + _)
-          .getOrElse(IExpression.i(0))
-      }
+      val lambdaBPrime: Seq[ITerm] = FormulaFactory.lambdaTimesB(lambdas, BPrime, a.length)
       val substMap: Map[ConstantTerm, ITerm] = solverState.X.indices.map { i =>
         solverState.X(i).c ->
           (a(i) + lambdaBPrime(i))
@@ -144,26 +141,8 @@ class LinearSet(
       val Lambdas2 = solverState.createConstants("lambda2_", ls2.B.length)
       val lambda3 = solverState.solverInstance.createConstant("lambda3")
 
-      val Lambdas1B1: Seq[ITerm] =
-        if (ls1.B.isEmpty)
-          Vector.fill(ls1.a.length)(IExpression.i(0))
-        else
-          ls1.B.transpose.map { col =>
-            (col zip Lambdas1)
-              .map { case (bij: IdealInt, lam: IConstant) => lam * bij }
-              .reduceOption(_ + _)
-              .getOrElse(IExpression.i(0))
-          }
-      val Lambdas2B2: Seq[ITerm] =
-        if (ls2.B.isEmpty)
-          Vector.fill(ls2.a.length)(IExpression.i(0))
-        else
-          ls2.B.transpose.map { col =>
-            (col zip Lambdas2)
-              .map { case (bij: IdealInt, lam: IConstant) => lam * bij }
-              .reduceOption(_ + _)
-              .getOrElse(IExpression.i(0))
-          }
+      val Lambdas1B1: Seq[ITerm] = FormulaFactory.lambdaTimesB(Lambdas1, ls1.B, ls1.a.length)
+      val Lambdas2B2: Seq[ITerm] =FormulaFactory.lambdaTimesB(Lambdas2, ls2.B, ls2.a.length)
       val a1_minus_a2 = vecMinus(ls1.a, ls2.a)
       val substMap: Map[ConstantTerm, ITerm] = solverState.X.indices.map { i =>
         solverState.X(i).c ->

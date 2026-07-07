@@ -9,7 +9,7 @@ import LIAStarSolver.SolverState.SolverState
 import LIAStarSolver.FormulaFactory.FormulaFactory
 import LIAStarSolver.SMT.SMT
 import LIAStarSolver.SatResult.{SatResult, Sat, Unsat, Model}
-import LIAStarSolver.Linear.LinearSet
+import LIAStarSolver.Linear.{LinearSet, SemilinearSet}
 
 class SatProcedure(
     solverInstance: SimpleAPI,
@@ -27,15 +27,13 @@ class SatProcedure(
     // check if an exit criteria can be applied right from the start
     if (isEarlyUnsat) {
       println(
-        s"DEBUG early unsat with overapprox ${pp(solverState.overApproxFStar)}"
+        s"DEBUG: initial early unsat with overapprox ${pp(solverState.overApproxFStar)}"
       )
       return Unsat
     }
     val earlySatRes: Option[Model] = isEarlySat
     if (earlySatRes.isDefined) {
-      println(
-        s"DEBUG early sat with overapprox ${pp(solverState.overApproxFStar)}"
-      )
+      println(s"DEBUG: (initial) early sat with underapprox ${pp(solverState.underApproxFStar)}")
       return Sat(earlySatRes.get)
     }
 
@@ -54,6 +52,7 @@ class SatProcedure(
         .toMap
     val g_of_XplusY = ConstantSubstVisitor(g, subst)
 
+    // this loop must converge at some point (could take infeasibly long)
     while (true) {
       println("\n\nDEBUG: top of while loop \n")
 
@@ -61,9 +60,9 @@ class SatProcedure(
       // check convergence of underapproximation to f*
       val convergenceRes = checkUnderApproxConvergence
       if (convergenceRes.isDefined) {
+        println(s"DEBUG: u (${pp(solverState.underApproxFStar)} converged to f*, exiting...")
         return convergenceRes.get
       }
-
 
       //////////////////////////////
       // strengthen the Overapproximation
@@ -74,51 +73,57 @@ class SatProcedure(
 
       if (SMT.isUnsat(unsatCondForStrengthenOver, solverState)) {
         println("DEBUG: strengthen over")
-        //strengthenOverApproximation(nUnfoldings) //TODO: uncomment this!!!!!!
+         strengthenOverApproximation(nUnfoldings)
+         println(s"DEBUG: strengthened overapprox: ${pp(solverState.overApproxFStar)}")
       } else {
-        println("DEBUG: DONT strengthen over")
+        println("DEBUG: Condition for applying strengthen over NOT met")
       }
 
       //////////////////////////////
-      // check if an exit criteria can be applied with the updated overapproximation
+      // check if exit criteria can be applied with the updated overapproximation
       if (isEarlyUnsat) {
         println(
           s"DEBUG: early unsat with overapprox ${pp(solverState.overApproxFStar)}"
         )
         return Unsat
       }
-      val earlySatRes: Option[Model] = isEarlySat
-      if (earlySatRes.isDefined) {
-        println(
-          s"DEBUG: early sat with overapprox ${pp(solverState.overApproxFStar)}"
-        )
-        return Sat(earlySatRes.get)
-      }
 
       //////////////////////////////
       // weaken the underapproximation
 
-      
-      //TODO: rename? not testing convergence here, but it is the same formula constructed for convergence
-      val convergenceCondition = solverState.f & !solverState.underApproxFStar 
+      // TODO: rename? not testing convergence here, but it is the same formula constructed for convergence
+      println("DEBUG_: getStatusAndModel from  weakenUnderCondition")
+      val convergenceCondition = solverState.f & !solverState.underApproxFStar
       val (proverStatus, modelOption) = SMT.getProverStatusAndModel(
         convergenceCondition,
         solverState.X,
         solverState
       )
       // since convergence criteria was unsat, a solution exists for f&!underapprox
-      // TODO: What if neither Sat nor Unsat???? What about timeout or similar??????
+      // TODO: Is neither Sat nor Unsat possible???? What about timeout or similar??????
       assert(proverStatus == ProverStatus.Sat && modelOption.isDefined)
       val solution_fAndNotUnderapprox: Model = modelOption.get
 
       weakenUnderApproximation(solution_fAndNotUnderapprox)
+      println(s"DEBUG: WEAKENED underapproximation:${pp(solverState.underApproxFStar)}")
+
+
+      //////////////////////////////
+      // check if exit criteria can be applied with the updated underapproximation
+      val earlySatRes: Option[Model] = isEarlySat
+      if (earlySatRes.isDefined) {
+        println(
+          s"""DEBUG: early sat with underapprox ${pp(solverState.underApproxFStar)}
+          (obtained from ${solverState.underApproxF_SLS}"""
+        )
+        return Sat(earlySatRes.get)
+      }
 
       println("\nDEBUG: bottom of while loop \n\n")
 
     }
-
-    println("DEBUG: RETURNING UNSAT ONLY AS PLACEHOLDER. NOT REAL RESULT!")
-    Unsat // TODO nur platzhalter!!!!!!
+    assert(true==false) // Can never reach here
+    return Unsat //TODO: unreachable, maybe refactor
   }
 
   // return true if g & Overapproximation is unsat. Then g & f* must be unsat
@@ -128,6 +133,7 @@ class SatProcedure(
 
   // return a model of g & Underapproximation if it is sat. Then g & f* must also be sat
   def isEarlySat: Option[Model] = {
+    println("DEBUG_: getStatusAndModel from isEarlySat")
     val (
       proverStatus,
       modelOption
@@ -151,6 +157,7 @@ class SatProcedure(
         proverStatus,
         modelOption
       ) =
+        println("DEBUG_: getStatusAndModel form checkunderapprox")
         SMT.getProverStatusAndModel(
           g & solverState.underApproxFStar,
           solverState.X,
@@ -242,6 +249,8 @@ class SatProcedure(
         fOfY: IFormula,
         substXWithXPlusY: Map[ConstantTerm, ITerm]
     ): Boolean = {
+      //TODO:
+      println(s"DEBUGG: p ${p} remainingPredicatesOfX ${remainingPredicatesOfX} fOfY ${fOfY} substXWithXPlusY ${substXWithXPlusY}")
       val pOfXPlusY =
         ConstantSubstVisitor(p, substXWithXPlusY)
       val inductivnessTest =
@@ -279,18 +288,58 @@ class SatProcedure(
   def weakenUnderApproximation(solutionToAdd: Model): Unit = {
     val v = solverState.X.map(solutionToAdd).toVector
     println(s"DEBUG: WEAKEN UNDER, adding solution ${v} to U") // TODO
-    // solverState.underApproxF_SLS.addLS(LinearSet(v, Vector()))
-    // TODO:
     solverState.underApproxF_SLS = solverState.underApproxF_SLS.addLS(
       LinearSet(v, Vector())
     )
 
-    solverState.underApproxF_SLS = solverState.underApproxF_SLS.addLS(
-      LinearSet(Vector(1,0), Vector(Vector(1, 3), Vector(0, 2), Vector(1,2)))//TOOD: REMOVE THIS. add v not (1,0)!!!!!
-    )
+    var changed = true
+    while (changed) {
+      changed = false
 
-    val offsetDownRes = solverState.underApproxF_SLS.linearSets.head.offsetDown(solverState)
-    println(s" offsetDownRes ${offsetDownRes}")
-    // solverState.underApproxF_SLS.linearSets.head.shiftDown(solverState)
+      var shiftDownChange = true
+      while (shiftDownChange) {
+        shiftDownChange = false
+        val shiftDownSLSOption: Option[SemilinearSet] =
+          solverState.underApproxF_SLS.shiftDown(solverState)
+        if (shiftDownSLSOption.isDefined) {
+          shiftDownChange = true
+          changed = true
+          solverState.underApproxF_SLS = shiftDownSLSOption.get
+        }
+      }
+
+      var offsetDownChange = true
+      while (offsetDownChange) {
+        offsetDownChange = false
+        val offsetDownSLSOption: Option[SemilinearSet] =
+          solverState.underApproxF_SLS.offsetDown(solverState)
+        if (offsetDownSLSOption.isDefined) {
+          changed = true
+          offsetDownChange = true
+          solverState.underApproxF_SLS = offsetDownSLSOption.get
+        }
+      }
+      var mergeChange = true
+      while (mergeChange) {
+        mergeChange = false
+        val mergeSLSOption: Option[SemilinearSet] =
+          solverState.underApproxF_SLS.merge(solverState)
+        if (mergeSLSOption.isDefined) {
+          changed = true
+          mergeChange = true
+          solverState.underApproxF_SLS = mergeSLSOption.get
+        }
+      }
+    }
+
+    println(s"DEBUG: converting U ${solverState.underApproxF_SLS} to underapprox fia starLIA")
+    solverState.underApproxFStar = formulaFactory.starLIA(solverState.underApproxF_SLS)
+    // TODO: Preprocess???
+    //println(s"before preprocessed ${pp(solverState.underApproxFStar)}")
+
+    //solverState.underApproxFStar = solverState.solverInstance.preprocessIFormula(solverState.underApproxFStar)
+    //println(s"preprocessed ${pp(solverState.underApproxFStar)}")
+
+
   }
 }

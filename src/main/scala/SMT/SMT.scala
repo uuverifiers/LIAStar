@@ -16,10 +16,13 @@ object SMT {
     push()
     !!(formula)
     val res = ???
+
     pop()
     res match {
-      case ProverStatus.Unsat => true
-      case _                  => false
+      case ProverStatus.Unsat => {
+        true
+      }
+      case _ => false
     }
   }
 
@@ -63,11 +66,19 @@ object SMT {
     !!(formula)
     val res = ???
     val returnRes = if (res == SimpleAPI.ProverStatus.Sat) {
-      val evaluator = completeModel
-      val model =
+      val model: Model =
         formulaVariables.map { x =>
-          x -> evaluator(x).asInstanceOf[IIntLit].value
+          x -> eval(x)
         }.toMap
+      
+
+      // TODO: completeModel can fail :C. What is the difference to eval (which seems to work)?????
+
+      //val evaluator = completeModel
+      // val model: Model=
+      // formulaVariables.map { x =>
+      // x -> evaluator(x).asInstanceOf[IIntLit].value
+      // }.toMap
 
       (res, Some(model))
     } else {

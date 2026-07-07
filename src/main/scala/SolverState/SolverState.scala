@@ -2,7 +2,6 @@ package LIAStarSolver.SolverState
 
 import ap.parser._
 import ap.SimpleAPI
-import ap.parser.IExpression.{ex, all}
 
 import LIAStarSolver.FormulaFactory.FormulaFactory
 import LIAStarSolver.Linear.SemilinearSet
@@ -27,39 +26,12 @@ class SolverState(
       .createConstants(prefix, 0 until num)
       .map(_.asInstanceOf[IConstant])
   }
-
-  // create n dimensional existentially quantified vector for use in a formula
-  // e.g exVector(2) { v=>v(0)===1&v(1)===1}
-  // corresponds to: \exists v0,v1; v0=0 & v1=1
-  def exVector(n: Int)(body: Seq[IConstant] => IFormula): IFormula = {
-    // TODO anschauen ob def quanConsts(quan : Quantifier,)
-    def recursiveHelper(remaining: Int, vars: List[IConstant]): IFormula = {
-      if (remaining == 0)
-        body(vars)
-      else
-        ex(v =>
-          recursiveHelper(remaining - 1, vars :+ v.asInstanceOf[IConstant])
-        )
-    }
-
-    recursiveHelper(n, Nil)
+  def createConstants(num: Int): Seq[IConstant] = {
+    solverInstance
+      .createConstants(num)
+      .map(_.asInstanceOf[IConstant])
   }
 
-  // create n dimensional universally quantified vector for use in a formula
-  // e.g allVector(2) { v=>v(0)===1&v(1)===1}
-  // corresponds to: \forall v0,v1; v0=0 & v1=1
-  def allVector(n: Int)(body: Seq[IConstant] => IFormula): IFormula = {
-    def recursiveHelper(remaining: Int, vars: List[IConstant]): IFormula = {
-      if (remaining == 0)
-        body(vars)
-      else
-        all(v =>
-          recursiveHelper(remaining - 1, vars :+ v.asInstanceOf[IConstant])
-        )
-    }
-
-    recursiveHelper(n, Nil)
-  }
 
   // function for tests/assertions: test if overApproxFStar is truly an overapproximation of f
   // TODO: just have this definition in testing???

@@ -28,21 +28,21 @@ import LIAStarSolver.SatResult.{SatResult, Sat, Unsat}
    //val f: IFormula = (u4 === IExpression.ite(f02 > universalSet, 1, 0))& (u5 === universalSet) & (u6 === f02) &
    //f02 >= 0 & universalSet >= 0
 //
-  //  val X: IndexedSeq[IConstant] = api.createConstants("x_", 0 until nDim).map(_.asInstanceOf[IConstant])
-  //  val g: IFormula = (X(1) + 2*X(0) >= 17) &
-  //  (6*X(0) - X(1) <= 47)
-  //  val f: IFormula = (5*X(0) + 2*X(1) >= 17) &
-  //  (3*X(0) - X(1) <= 8) &
-  //  (2*X(0) + 3*X(1) <= 20)
+    val X: IndexedSeq[IConstant] = api.createConstants("x_", 0 until nDim).map(_.asInstanceOf[IConstant])
+    val g: IFormula = (X(1) + 2*X(0) >= 17) &
+    (6*X(0) - X(1) <= 47)
+    val f: IFormula = (5*X(0) + 2*X(1) >= 17) &
+    (3*X(0) - X(1) <= 8) &
+    (2*X(0) + 3*X(1) <= 20)
 
-  val X: IndexedSeq[IConstant] = api.createConstants("x_", 0 until 2).map(_.asInstanceOf[IConstant])
-  val Y: IndexedSeq[IConstant] = api.createConstants("y_", 0 until 2).map(_.asInstanceOf[IConstant])
+  //val X: IndexedSeq[IConstant] = api.createConstants("x_", 0 until 2).map(_.asInstanceOf[IConstant])
+  //val Y: IndexedSeq[IConstant] = api.createConstants("y_", 0 until 2).map(_.asInstanceOf[IConstant])
 
 
   //val X = RichITermSeq(api.createConstants("x_", 0 until 1))
-  val g: IFormula = X(0) < -2
+  //val g: IFormula = X(0) < -2
   //val g: IFormula = X(0) < 2
-  val f: IFormula = X(0) >= 1
+  //val f: IFormula = X(0) >= 1
   //val f: IFormula = X(0) === 1
 
 

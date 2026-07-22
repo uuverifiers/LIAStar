@@ -178,7 +178,6 @@ class MergeTests extends munit.FunSuite with TestHelpers {
 
   ////////////////////////////////////
   // Merge on semilinear set
-  // TODO:
   test("SLS merge: one mergable set-pair") {
     val api = SimpleAPI.spawnWithAssertions
     val X: Seq[IConstant] =

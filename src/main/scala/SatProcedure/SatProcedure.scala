@@ -5,6 +5,7 @@ import ap.SimpleAPI.{ProverStatus, pp}
 import ap.parser._
 import ap.terfor.ConstantTerm
 
+
 import LIAStarSolver.SolverState.SolverState
 import LIAStarSolver.FormulaFactory.FormulaFactory
 import LIAStarSolver.SMT.SMT
@@ -20,6 +21,8 @@ class SatProcedure(
 
   val solverState = SolverState(solverInstance, g, f, X)
   val formulaFactory = FormulaFactory(solverState)
+
+  val overapproximationRefiner = OverapproximationRefiner(solverState, formulaFactory)
 
   // calculate if formula g(X) & f*(X) is sat or unsat
   def checkFormula(): SatResult = {
@@ -42,13 +45,15 @@ class SatProcedure(
 
     // setup for while loop
     val nUnfoldings = 2
-    val Y: Seq[IConstant] = solverState.createConstants("y_", X.length)
+
+    //TODO: CHANGELOG added solverState.
+    val Y: Seq[IConstant] = solverState.createConstants("y_", solverState.X.length) 
     val fLess2nUnfoldingsOfY = formulaFactory.fLessN(
       2 * nUnfoldings,
       Y
     )
     val subst: Map[ConstantTerm, ITerm] =
-      X.zip(Y)
+      solverState.X.zip(Y) //TODO: CHANGELOG: added solverState.
         .map { case (x, y) =>
           x.asInstanceOf[IConstant].c -> (x + y)
         }
@@ -80,7 +85,7 @@ class SatProcedure(
 
       if (SMT.isUnsat(unsatCondForStrengthenOver, solverState)) {
         println("DEBUG: strengthen over")
-        strengthenOverApproximation(nUnfoldings)
+        overapproximationRefiner.strengthenOverApproximation(nUnfoldings)
         println(
           s"DEBUG: strengthened overapprox: ${pp(solverState.overApproxFStar)}"
         )
@@ -109,7 +114,6 @@ class SatProcedure(
         solverState
       )
       // since convergence criteria was unsat, a solution exists for f&!underapprox
-      // TODO: Is neither Sat nor Unsat possible???? What about timeout or similar??????
       assert(proverStatus == ProverStatus.Sat)
       if (modelOption.isEmpty) {
         // no model can be constructed for f&!underApproximationOfFStar => algorithm can't continue
@@ -198,112 +202,9 @@ class SatProcedure(
     }
   }
 
-  def strengthenOverApproximation(
-      nUnfoldings: Int
-  ): Unit = {
-    import formulaFactory._
-    // TODO: QUESTION: is this a problem, if i do it multiple times (already in checkFormula)
-    val Y = solverState.createConstants("y_", solverState.X.length)
-    val Z = solverState.createConstants("z_", solverState.X.length)
-
-    val f1 =
-      substituteX(solverState.underApproxFStar, Y) & fLessN(
-        nUnfoldings,
-        Z
-      ) & X === (Y +++ Z)
-    val YPrime = solverState.createConstants("yPrime_", solverState.X.length)
-    val ZPrime = solverState.createConstants("zPrime_", solverState.X.length)
-    val f2 = !(X === (YPrime +++ ZPrime) & fLessN(
-      nUnfoldings,
-      YPrime
-    ) & substituteX(solverState.g, ZPrime))
-
-    if (SMT.isUnsat(f1 & f2.notSimplify, solverState)) {
-      // f1 ==> f2 is valid
-      // get Interpolant between f1 and f2
-
-      val itp = SMT.getInterpolant(f1, f2.notSimplify, solverState)
-      // TODO: /NOTE itp has as variables X (in general, where to mention this,
-      // how to make clear which variables occur for good readability/code clarity)
-      println(s"DEBUG: in strengthenOver: find Interpolant ${pp(itp)}")
-      solverState.overApproxFStar = _getNextOverApprox(itp)
-    } else {
-      println(
-        "DEBUG: in strengthenOver: DONT find Interpolant => overapproximation stays the same"
-      )
-    }
-
-    // TODO: remove this sanity check at the end of implementation
-    assert(solverState.___isOverapproximationTest)
-  }
-
-  // TODO: Maybe extract into it's own class??
-  // update the the conjuncts from all previous interpolations.
-  // return the overapproximation resulting from these conjuncts
-  def _getNextOverApprox(newItp: IFormula): IFormula = {
-    val conjuncts = FormulaFactory.conjuncts(newItp)
-    // TODO: make sure allInterpolantsConjuncts don't contain duplicates!?
-    solverState.allInterpolantConjuncts =
-      solverState.allInterpolantConjuncts ++ conjuncts
-
-    val inductiveConjuncts = _filterInductivePredicates(
-      solverState.allInterpolantConjuncts
-    )
-
-    if (inductiveConjuncts.length == 0)
-      IExpression.i(true)
-    else
-      inductiveConjuncts.reduce(_ & _)
-
-  }
-
-  def _filterInductivePredicates(predicates: Seq[IFormula]): Seq[IFormula] = {
-
-    // inductive iff:
-    // forall x,y; remainingPredicates(x) & f(y) -> remainingPredicates(x+y)
-    def isInductiveClause(
-        p: IFormula,
-        remainingPredicatesOfX: IFormula,
-        fOfY: IFormula,
-        substXWithXPlusY: Map[ConstantTerm, ITerm]
-    ): Boolean = {
-      val pOfXPlusY =
-        ConstantSubstVisitor(p, substXWithXPlusY)
-      val inductivnessTest =
-        remainingPredicatesOfX & fOfY & !pOfXPlusY
-
-      SMT.isUnsat(inductivnessTest, solverState)
-    }
-
-    var previousRemainingPredicates: Seq[IFormula] = Seq()
-    var remainingPredicates = predicates
-    val Y = solverState.createConstants("y_", solverState.X.length)
-
-    // remove non Inductive predicates until convergance
-    while (remainingPredicates != previousRemainingPredicates) {
-      if (remainingPredicates == Seq())
-        // worst case, no clause was inductive
-        return Seq()
-      previousRemainingPredicates = remainingPredicates
-
-      // compute shared formulas for every p
-      val remainingPredicatesOfX = remainingPredicates.reduce(_ & _)
-      val fOfY = formulaFactory.substituteX(solverState.f, Y)
-      val subst = (solverState.X zip Y).map { case (x, y) =>
-        x.c -> (x + y)
-      }.toMap
-
-      remainingPredicates = for {
-        p <- remainingPredicates
-        if (isInductiveClause(p, remainingPredicatesOfX, fOfY, subst))
-      } yield p
-    }
-    return remainingPredicates
-  }
-
   def weakenUnderApproximation(solutionToAdd: Model): Unit = {
     val v = solverState.X.map(solutionToAdd).toVector
-    println(s"DEBUG: WEAKEN UNDER, adding solution ${v} to U") // TODO
+    println(s"DEBUG: WEAKEN UNDER, adding solution ${v} to U") 
     solverState.underApproxF_SLS = solverState.underApproxF_SLS.addLS(
       LinearSet(v, Vector())
     )
@@ -312,6 +213,7 @@ class SatProcedure(
       s"DEBUG: before Augment application ${solverState.underApproxF_SLS}"
     )
 
+    // TODO: move into SLS
     var changed = true
     while (changed) {
       changed = false

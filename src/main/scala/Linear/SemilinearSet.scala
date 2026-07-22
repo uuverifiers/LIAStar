@@ -22,11 +22,6 @@ class SemilinearSet(val linearSets: Set[LinearSet]) { // evtl deterministich TOD
     SemilinearSet(linearSets + ls)
   }
 
-  def saturate() = {
-    val changed = true
-    while (changed) {}
-  }
-
   // Try to apply merge rule either return Some(resulting SemilinearSet) or None, if merge rule not applicable
   def merge(
       solverState: SolverState

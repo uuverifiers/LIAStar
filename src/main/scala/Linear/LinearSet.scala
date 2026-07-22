@@ -50,12 +50,6 @@ class LinearSet(
 
       val lambdaB: Seq[ITerm] =FormulaFactory.lambdaTimesB(lambdas, B, a.length)
 
-        //B.transpose.map { col =>
-          //(col zip lambdas)
-            //.map { case (bij, lam) => lam * bij }
-            //.reduceOption(_ + _)
-            //.getOrElse(IExpression.i(0))
-        //}
       val substMap: Map[ConstantTerm, ITerm] =
         solverState.X.indices.map { i =>
           solverState.X(i).c ->
@@ -153,7 +147,7 @@ class LinearSet(
           !(solverState.f),
           substMap
         )
-      val res = SMT.isUnsat(condition, solverState) // TODO
+      val res = SMT.isUnsat(condition, solverState) 
       res
     }
 

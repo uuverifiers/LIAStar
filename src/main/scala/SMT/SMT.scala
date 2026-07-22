@@ -43,6 +43,8 @@ object SMT {
   // check if formula is Valid.
   // Any other result returns false (including timeout)
   // TODO is timeout even possible
+  // TODO: remove since only used by one testing function?
+  // Rename since still checking Unsat not ProverStatus.Valid?
   def isValid(formula: IFormula, solverState: SolverState): Boolean = {
     import solverState.solverInstance._
     push()
@@ -67,24 +69,31 @@ object SMT {
     )
     import solverState.solverInstance._
     push()
-    !!(formula)
+    ??(formula)
+    makeExistential(formulaVariables)
     val res = ???
-    val returnRes = if (res == SimpleAPI.ProverStatus.Sat) {
+    println(s"DEBUG RES ${res}")
+    val returnRes = if (res == SimpleAPI.ProverStatus.Valid) {
 
       try {
         val model: Model =
           formulaVariables.map { x =>
             x -> eval(x)
           }.toMap
-        (res, Some(model))
+        (SimpleAPI.ProverStatus.Sat, Some(model))
       } catch {
         case _: NoModelException.type =>
           // SAT but Princess cannot produce a model
+          assert(false)
           (res, None)
       }
 
     } else {
-      (res, None)
+      if (res == SimpleAPI.ProverStatus.Invalid){
+        (SimpleAPI.ProverStatus.Unsat, None)
+      } else {
+        (res, None)
+      }
     }
     pop()
     returnRes
@@ -98,11 +107,11 @@ object SMT {
       solverState: SolverState
   ): IFormula = {
     import solverState.solverInstance._
-    require(SMT.isUnsat(a & b, solverState))
+    require(SMT.isUnsat(a & b, solverState)) //TODO: remove for performance
 
-    setConstructProofs(true) // needed for getInterpolants
 
     push()
+    setConstructProofs(true) // needed for getInterpolants
     setPartitionNumber(1)
     !!(a)
     setPartitionNumber(2)

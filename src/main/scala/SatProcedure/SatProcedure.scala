@@ -23,6 +23,7 @@ class SatProcedure(
   val formulaFactory = FormulaFactory(solverState)
 
   val overapproximationRefiner = OverapproximationRefiner(solverState, formulaFactory)
+  val underapproximationRefiner = UnderapproximationRefiner(solverState, formulaFactory)
 
   // calculate if formula g(X) & f*(X) is sat or unsat
   def checkFormula(): SatResult = {
@@ -108,6 +109,7 @@ class SatProcedure(
       // TODO: rename? not testing convergence here, but it is the same formula constructed for convergence
       val convergenceCondition = solverState.f & !solverState.underApproxFStar
       println("DEBUG____: calling getStatus for weakenUnder")
+      // get model to add to solverState.underApproxF_SLS
       val (proverStatus, modelOption) = SMT.getProverStatusAndModel(
         convergenceCondition,
         solverState.X,
@@ -117,12 +119,14 @@ class SatProcedure(
       assert(proverStatus == ProverStatus.Sat)
       if (modelOption.isEmpty) {
         // no model can be constructed for f&!underApproximationOfFStar => algorithm can't continue
+        // TODOREFACTOR: is this still the case???
+        assert(false, "SHOULD NOT BE HERE ANYMORE")
         return Inconclusive 
       }
       else {
         val solution_fAndNotUnderapprox: Model = modelOption.get
 
-        weakenUnderApproximation(solution_fAndNotUnderapprox)
+        underapproximationRefiner.weakenUnderApproximation(solution_fAndNotUnderapprox)
         println(
           s"DEBUG: WEAKENED underapproximation:${pp(solverState.underApproxFStar)}"
         )
@@ -202,63 +206,4 @@ class SatProcedure(
     }
   }
 
-  def weakenUnderApproximation(solutionToAdd: Model): Unit = {
-    val v = solverState.X.map(solutionToAdd).toVector
-    println(s"DEBUG: WEAKEN UNDER, adding solution ${v} to U") 
-    solverState.underApproxF_SLS = solverState.underApproxF_SLS.addLS(
-      LinearSet(v, Vector())
-    )
-
-    println(
-      s"DEBUG: before Augment application ${solverState.underApproxF_SLS}"
-    )
-
-    // TODO: move into SLS
-    var changed = true
-    while (changed) {
-      changed = false
-
-      var shiftDownChange = true
-      while (shiftDownChange) {
-        shiftDownChange = false
-        val shiftDownSLSOption: Option[SemilinearSet] =
-          solverState.underApproxF_SLS.shiftDown(solverState)
-        if (shiftDownSLSOption.isDefined) {
-          shiftDownChange = true
-          changed = true
-          solverState.underApproxF_SLS = shiftDownSLSOption.get
-        }
-      }
-
-      var offsetDownChange = true
-      while (offsetDownChange) {
-        offsetDownChange = false
-        val offsetDownSLSOption: Option[SemilinearSet] =
-          solverState.underApproxF_SLS.offsetDown(solverState)
-        if (offsetDownSLSOption.isDefined) {
-          changed = true
-          offsetDownChange = true
-          solverState.underApproxF_SLS = offsetDownSLSOption.get
-        }
-      }
-      var mergeChange = true
-      while (mergeChange) {
-        mergeChange = false
-        val mergeSLSOption: Option[SemilinearSet] =
-          solverState.underApproxF_SLS.merge(solverState)
-        if (mergeSLSOption.isDefined) {
-          changed = true
-          mergeChange = true
-          solverState.underApproxF_SLS = mergeSLSOption.get
-        }
-      }
-    }
-
-    println(
-      s"DEBUGs: after Augment application ${solverState.underApproxF_SLS}. Transforming this to underapprox via starLIA"
-    )
-    // convert SLS underapproximating f to a formula underapproximating f*
-    solverState.underApproxFStar =
-      formulaFactory.starLIA(solverState.underApproxF_SLS)
-  }
 }

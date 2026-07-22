@@ -22,6 +22,52 @@ class SemilinearSet(val linearSets: Set[LinearSet]) { // evtl deterministich TOD
     SemilinearSet(linearSets + ls)
   }
 
+  // apply merge, offsetDown and shiftDown rules, until the resulting SemilinearSet no longer changes
+  def augment(solverState: SolverState): SemilinearSet = {
+    var current = this
+    var changed = true
+    while (changed) {
+      changed = false
+
+      var shiftDownChange = true
+      while (shiftDownChange) {
+        shiftDownChange = false
+        val shiftDownSLSOption: Option[SemilinearSet] =
+          current.shiftDown(solverState)
+        if (shiftDownSLSOption.isDefined) {
+          shiftDownChange = true
+          changed = true
+          current = shiftDownSLSOption.get
+        }
+      }
+
+      var offsetDownChange = true
+      while (offsetDownChange) {
+        offsetDownChange = false
+        val offsetDownSLSOption: Option[SemilinearSet] =
+          current.offsetDown(solverState)
+        if (offsetDownSLSOption.isDefined) {
+          changed = true
+          offsetDownChange = true
+          current = offsetDownSLSOption.get
+        }
+      }
+      var mergeChange = true
+      while (mergeChange) {
+        mergeChange = false
+        val mergeSLSOption: Option[SemilinearSet] =
+          current.merge(solverState)
+        if (mergeSLSOption.isDefined) {
+          changed = true
+          mergeChange = true
+          current = mergeSLSOption.get
+        }
+      }
+    }
+    
+    current
+  }
+
   // Try to apply merge rule either return Some(resulting SemilinearSet) or None, if merge rule not applicable
   def merge(
       solverState: SolverState

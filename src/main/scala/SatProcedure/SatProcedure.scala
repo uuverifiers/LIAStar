@@ -22,7 +22,8 @@ class SatProcedure(
   val solverState = SolverState(solverInstance, g, f, X)
   val formulaFactory = FormulaFactory(solverState)
 
-  val overapproximationRefiner = OverapproximationRefiner(solverState, formulaFactory)
+  val nUnfoldings = 2
+  val overapproximationRefiner = OverapproximationRefiner(solverState, formulaFactory, nUnfoldings)
   val underapproximationRefiner = UnderapproximationRefiner(solverState, formulaFactory)
 
   // calculate if formula g(X) & f*(X) is sat or unsat
@@ -45,21 +46,20 @@ class SatProcedure(
     }
 
     // setup for while loop
-    val nUnfoldings = 2
 
-    //TODO: CHANGELOG added solverState.
-    val Y: Seq[IConstant] = solverState.createConstants("y_", solverState.X.length) 
-    val fLess2nUnfoldingsOfY = formulaFactory.fLessN(
-      2 * nUnfoldings,
-      Y
-    )
-    val subst: Map[ConstantTerm, ITerm] =
-      solverState.X.zip(Y) //TODO: CHANGELOG: added solverState.
-        .map { case (x, y) =>
-          x.asInstanceOf[IConstant].c -> (x + y)
-        }
-        .toMap
-    val g_of_XplusY = ConstantSubstVisitor(g, subst)
+    //TODO:
+    //val Y: Seq[IConstant] = solverState.createConstants("y_", solverState.X.length) 
+    //val fLess2nUnfoldingsOfY = formulaFactory.fLessN(
+      //2 * nUnfoldings,
+      //Y
+    //)
+    //val subst: Map[ConstantTerm, ITerm] =
+      //solverState.X.zip(Y)
+        //.map { case (x, y) =>
+          //x.asInstanceOf[IConstant].c -> (x + y)
+        //}
+        //.toMap
+    //val g_of_XplusY = ConstantSubstVisitor(g, subst)
 
     var _loopCount = 0 // TODO: only for debuggin purposes?!
     // this loop must converge at some point (could take infeasibly long)
@@ -80,20 +80,9 @@ class SatProcedure(
       //////////////////////////////
       // strengthen the Overapproximation
 
-      // check underApprox(X) & f_less_2n(Y) & g(X+Y) unsat
-      val unsatCondForStrengthenOver: IFormula =
-        solverState.underApproxFStar & fLess2nUnfoldingsOfY & g_of_XplusY
+      //TODO
 
-      if (SMT.isUnsat(unsatCondForStrengthenOver, solverState)) {
-        println("DEBUG: strengthen over")
-        overapproximationRefiner.strengthenOverApproximation(nUnfoldings)
-        println(
-          s"DEBUG: strengthened overapprox: ${pp(solverState.overApproxFStar)}"
-        )
-      } else {
-        println("DEBUG: Condition for applying strengthen over NOT met")
-      }
-
+      overapproximationRefiner.strengthenOverApproximation()
       //////////////////////////////
       // check if exit criteria can be applied with the updated overapproximation
       if (isEarlyUnsat) {
@@ -146,7 +135,7 @@ class SatProcedure(
 
     }
     assert(true == false) // Can never reach here
-    return Unsat // TODO: unreachable, maybe refactor
+    return Inconclusive // TODO: unreachable, maybe refactor
   }
 
   // return true if g & Overapproximation is unsat. Then g & f* must be unsat

@@ -16,7 +16,8 @@ class OverapproximationRefinerTests extends munit.FunSuite {
     val f = X(0) === 1
     val state = SolverState(api, true, f, X)
     val factory = FormulaFactory(state)
-    val refiner = OverapproximationRefiner(state, factory)
+    val nUnfoldings = 2
+    val refiner = OverapproximationRefiner(state, factory, nUnfoldings)
 
 
     val predicates = Seq(X(0) >= 0)
@@ -32,7 +33,8 @@ class OverapproximationRefinerTests extends munit.FunSuite {
     val f = X(0) === 2 & X(1) > 0
     val state = SolverState(api, true, f, X)
     val factory = FormulaFactory(state)
-    val refiner = OverapproximationRefiner(state, factory)
+    val nUnfoldings = 2
+    val refiner = OverapproximationRefiner(state, factory, nUnfoldings)
 
     val predicates: Seq[IFormula] =
       Seq(X(0) >= 0, X(1) <= 10, (X(1) > -4 | X(0) === 3), X(1) > -2)
@@ -51,7 +53,8 @@ class OverapproximationRefinerTests extends munit.FunSuite {
     val f = X(0) === 2 & X(1) > 0
     val state = SolverState(api, true, f, X)
     val factory = FormulaFactory(state)
-    val refiner = OverapproximationRefiner(state, factory)
+    val nUnfoldings = 2
+    val refiner = OverapproximationRefiner(state, factory, nUnfoldings)
 
     val predicates: Seq[IFormula] =
       Seq(

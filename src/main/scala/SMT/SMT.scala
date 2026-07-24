@@ -107,7 +107,7 @@ object SMT {
       solverState: SolverState
   ): IFormula = {
     import solverState.solverInstance._
-    require(SMT.isUnsat(a & b, solverState)) //TODO: remove for performance
+    require(SMT.isUnsat(a & b, solverState)) //TODO: remove for performance?
 
 
     push()

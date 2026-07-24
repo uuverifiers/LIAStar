@@ -159,7 +159,6 @@ class SatProcedureTests extends munit.FunSuite {
     val procedure = SatProcedure(api, g, f, X)
 
     val obtained = procedure.checkFormula()
-    println(s" x+y sat: ${obtained}")
     obtained match {
       // NOTE: this does not ensure this is actually a correct model
       case Sat(Some(m)) =>

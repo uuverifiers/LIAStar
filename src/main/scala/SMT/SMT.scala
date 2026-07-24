@@ -57,43 +57,55 @@ object SMT {
     }
   }
 
-  // return ProverStatus as well as a Model, if ProverStatus.Sat and it can be constructed by Princess!
-  // (so sat and no Model is a possibility)
-  def getProverStatusAndModel(
+  // check sat of a formula and return model if sat.
+  // Use when no all quantifiers are in formula
+  def checkSatAndModel(
       formula: IFormula,
       formulaVariables: Seq[IConstant],
       solverState: SolverState
   ): (ProverStatus.Value, Option[Model]) = {
-    println(
-      s"DEBUG______: getProverStatusAndModel for f ${SimpleAPI.pp(formula)}"
-    )
+
+    import solverState.solverInstance._
+    push()
+    !!(formula)
+    val res = ???
+    val returnRes = if (res == SimpleAPI.ProverStatus.Sat) {
+      // TODO: can this throw NoModelException.type (from SimpleAPI)?
+      val model: Model =
+        formulaVariables.map { x =>
+          x -> eval(x)
+        }.toMap
+      (res, Some(model))
+
+    } else {
+      (res, None)
+    }
+    pop()
+    returnRes
+
+  }
+
+  // check validity of a formula and return model if valid.
+  // Use when the formula contains all quantifiers
+  def checkValidityAndModel(
+      formula: IFormula,
+      formulaVariables: Seq[IConstant],
+      solverState: SolverState
+  ): (ProverStatus.Value, Option[Model]) = {
     import solverState.solverInstance._
     push()
     ??(formula)
     makeExistential(formulaVariables)
     val res = ???
-    println(s"DEBUG RES ${res}")
     val returnRes = if (res == SimpleAPI.ProverStatus.Valid) {
-
-      try {
-        val model: Model =
-          formulaVariables.map { x =>
-            x -> eval(x)
-          }.toMap
-        (SimpleAPI.ProverStatus.Sat, Some(model))
-      } catch {
-        case _: NoModelException.type =>
-          // SAT but Princess cannot produce a model
-          assert(false)
-          (res, None)
-      }
+      val model: Model =
+        formulaVariables.map { x =>
+          x -> eval(x)
+        }.toMap
+      (res, Some(model))
 
     } else {
-      if (res == SimpleAPI.ProverStatus.Invalid){
-        (SimpleAPI.ProverStatus.Unsat, None)
-      } else {
-        (res, None)
-      }
+      (res, None)
     }
     pop()
     returnRes
@@ -107,8 +119,7 @@ object SMT {
       solverState: SolverState
   ): IFormula = {
     import solverState.solverInstance._
-    require(SMT.isUnsat(a & b, solverState)) //TODO: remove for performance?
-
+    require(SMT.isUnsat(a & b, solverState)) // TODO: remove for performance?
 
     push()
     setConstructProofs(true) // needed for getInterpolants

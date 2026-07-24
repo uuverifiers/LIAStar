@@ -5,7 +5,6 @@ import ap.SimpleAPI.{ProverStatus, pp}
 import ap.parser._
 import ap.terfor.ConstantTerm
 
-
 import LIAStarSolver.SolverState.SolverState
 import LIAStarSolver.FormulaFactory.FormulaFactory
 import LIAStarSolver.SMT.SMT
@@ -23,72 +22,74 @@ class SatProcedure(
   val formulaFactory = FormulaFactory(solverState)
 
   val nUnfoldings = 2
-  val overapproximationRefiner = OverapproximationRefiner(solverState, formulaFactory, nUnfoldings)
-  val underapproximationRefiner = UnderapproximationRefiner(solverState, formulaFactory)
+  val overapproximationRefiner =
+    OverapproximationRefiner(solverState, formulaFactory, nUnfoldings)
+  val underapproximationRefiner =
+    UnderapproximationRefiner(solverState, formulaFactory)
 
   // calculate if formula g(X) & f*(X) is sat or unsat
   def checkFormula(): SatResult = {
 
     // check if an exit criteria can be applied right from the start
     if (isEarlyUnsat) {
-      println(
-        s"DEBUG: EXIT: initial early unsat with overapprox ${pp(solverState.overApproxFStar)}"
-      )
+      // println(
+      // s"DEBUG: EXIT: initial early unsat with overapprox ${pp(solverState.overApproxFStar)}"
+      // )
       return Unsat
     }
 
     val (earlySat, modelOptionRes): (Boolean, Option[Model]) = isEarlySat
     if (earlySat) {
-      println(
-        s"DEBUG: EXIT:  (initial) early sat with underapprox ${pp(solverState.underApproxFStar)}"
-      )
+      // println(
+      // s"DEBUG: EXIT:  (initial) early sat with underapprox ${pp(solverState.underApproxFStar)}"
+      // )
       return Sat(modelOptionRes)
     }
 
     // setup for while loop
 
-    //TODO:
-    //val Y: Seq[IConstant] = solverState.createConstants("y_", solverState.X.length) 
-    //val fLess2nUnfoldingsOfY = formulaFactory.fLessN(
-      //2 * nUnfoldings,
-      //Y
-    //)
-    //val subst: Map[ConstantTerm, ITerm] =
-      //solverState.X.zip(Y)
-        //.map { case (x, y) =>
-          //x.asInstanceOf[IConstant].c -> (x + y)
-        //}
-        //.toMap
-    //val g_of_XplusY = ConstantSubstVisitor(g, subst)
+    // TODO:
+    // val Y: Seq[IConstant] = solverState.createConstants("y_", solverState.X.length)
+    // val fLess2nUnfoldingsOfY = formulaFactory.fLessN(
+    // 2 * nUnfoldings,
+    // Y
+    // )
+    // val subst: Map[ConstantTerm, ITerm] =
+    // solverState.X.zip(Y)
+    // .map { case (x, y) =>
+    // x.asInstanceOf[IConstant].c -> (x + y)
+    // }
+    // .toMap
+    // val g_of_XplusY = ConstantSubstVisitor(g, subst)
 
     var _loopCount = 0 // TODO: only for debuggin purposes?!
     // this loop must converge at some point (could take infeasibly long)
     while (true) {
-      println(s"\n\nDEBUG: top of while loop (iteration ${_loopCount})\n")
+      // println(s"\n\nDEBUG: top of while loop (iteration ${_loopCount})\n")
       _loopCount += 1
 
       //////////////////////////////
       // check convergence of underapproximation to f*
       val convergenceRes = checkUnderApproxConvergence
       if (convergenceRes.isDefined) {
-        println(
-          s"DEBUG: EXIT: u (${pp(solverState.underApproxFStar)} converged to f*"
-        )
+        // println(
+        // s"DEBUG: EXIT: u (${pp(solverState.underApproxFStar)} converged to f*"
+        // )
         return convergenceRes.get
       }
 
       //////////////////////////////
       // strengthen the Overapproximation
 
-      //TODO
+      // TODO
 
       overapproximationRefiner.strengthenOverApproximation()
       //////////////////////////////
       // check if exit criteria can be applied with the updated overapproximation
       if (isEarlyUnsat) {
-        println(
-          s"DEBUG: early unsat with overapprox ${pp(solverState.overApproxFStar)}"
-        )
+        // println(
+        // s"DEBUG: early unsat with overapprox ${pp(solverState.overApproxFStar)}"
+        // )
         return Unsat
       }
 
@@ -97,41 +98,37 @@ class SatProcedure(
 
       // TODO: rename? not testing convergence here, but it is the same formula constructed for convergence
       val convergenceCondition = solverState.f & !solverState.underApproxFStar
-      println("DEBUG____: calling getStatus for weakenUnder")
       // get model to add to solverState.underApproxF_SLS
-      val (proverStatus, modelOption) = SMT.getProverStatusAndModel(
+      // !underApproxFStar can introduce all quantifier => use checkValidityAndModel instead of checkSatAndModel
+
+      val (proverStatus, modelOption) = SMT.checkValidityAndModel(
         convergenceCondition,
         solverState.X,
         solverState
       )
-      // since convergence criteria was unsat, a solution exists for f&!underapprox
-      assert(proverStatus == ProverStatus.Sat)
-      if (modelOption.isEmpty) {
-        // no model can be constructed for f&!underApproximationOfFStar => algorithm can't continue
-        // TODOREFACTOR: is this still the case???
-        assert(false, "SHOULD NOT BE HERE ANYMORE")
-        return Inconclusive 
-      }
-      else {
-        val solution_fAndNotUnderapprox: Model = modelOption.get
+      // since convergence criteria was invalid, a solution exists for f&!underapprox
+      assert(proverStatus == ProverStatus.Valid && modelOption.isDefined)
 
-        underapproximationRefiner.weakenUnderApproximation(solution_fAndNotUnderapprox)
-        println(
-          s"DEBUG: WEAKENED underapproximation:${pp(solverState.underApproxFStar)}"
-        )
-      }
+      val solution_fAndNotUnderapprox: Model = modelOption.get
+
+      underapproximationRefiner.weakenUnderApproximation(
+        solution_fAndNotUnderapprox
+      )
+      // println(
+      // s"DEBUG: WEAKENED underapproximation:${pp(solverState.underApproxFStar)}"
+      // )
 
       //////////////////////////////
       // check if exit criteria can be applied with the updated underapproximation
       val (earlySat, modelOptionRes): (Boolean, Option[Model]) = isEarlySat
       if (earlySat) {
-        println(
-          s"DEBUG: early sat with underapprox ${pp(solverState.underApproxFStar)}"
-        )
+        // println(
+        // s"DEBUG: early sat with underapprox ${pp(solverState.underApproxFStar)}"
+        // )
         return Sat(modelOptionRes)
       }
 
-      println("\nDEBUG: bottom of while loop \n\n")
+      // println("\nDEBUG: bottom of while loop \n\n")
 
     }
     assert(true == false) // Can never reach here
@@ -146,11 +143,19 @@ class SatProcedure(
   // return a if g & Underapproximation is sat. Then g & f* must also be sat.
   // If Sat and a model can be produced, return it as Some(Model)
   def isEarlySat: (Boolean, Option[Model]) = {
-    println("DEBUG____: calling getStatus for isEarlySat")
+    // println("DEBUG____: calling getStatus for isEarlySat")
+    // val (
+    // proverStatus,
+    // modelOption
+    // ) = SMT.getProverStatusAndModel(
+    // g & solverState.underApproxFStar,
+    // solverState.X,
+    // solverState
+    // )
     val (
       proverStatus,
       modelOption
-    ) = SMT.getProverStatusAndModel(
+    ) = SMT.checkSatAndModel(
       g & solverState.underApproxFStar,
       solverState.X,
       solverState
@@ -166,27 +171,28 @@ class SatProcedure(
     val convergenceCondition = solverState.f & !solverState.underApproxFStar
     if (SMT.isUnsat(convergenceCondition, solverState)) {
       // now g&underapproximation is equivalent to g&f*
-      println(s"DEBUG  u has converged to f*")
-      println("DEBUG____: calling getStatus for ")
+      // println(s"DEBUG  u has converged to f*")
+      // println("DEBUG____: calling getStatus for ")
+
       val (
         proverStatus,
         modelOption
       ) =
-        SMT.getProverStatusAndModel(
+        SMT.checkValidityAndModel(
           g & solverState.underApproxFStar,
           solverState.X,
           solverState
         )
       val returnValue = proverStatus match {
-        case ProverStatus.Sat =>
+        case ProverStatus.Valid =>
           Sat(
             modelOption
-          ) 
-        case ProverStatus.Unsat => Unsat
-        case _                  =>
-          throw new Exception(
-            "ProverStatus neither Sat or Unsat for g&f*"
-          ) // TODO: Is this really an Exception and even reachable?
+          )
+        case ProverStatus.Invalid => Unsat
+
+        case _ =>
+          // could neither confirm sat nor unsat
+          Inconclusive
       }
       Some(returnValue)
     } else {

@@ -77,7 +77,7 @@ class OverapproximationRefiner(
     val itp = SMT.getInterpolant(f1, notf2Simplified, solverState)
       // TODO: /NOTE itp has as variables X (in general, where to mention this,
       // how to make clear which variables occur for good readability/code clarity)
-    println(s"DEBUG: in strengthenOver: find Interpolant ${pp(itp)}")
+    //println(s"DEBUG: in strengthenOver: find Interpolant ${pp(itp)}")
     solverState.overApproxFStar = _getNextOverApprox(itp)
 
     // TODO: remove this sanity check at the end of implementation

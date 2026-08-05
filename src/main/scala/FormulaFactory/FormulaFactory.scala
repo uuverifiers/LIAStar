@@ -112,8 +112,8 @@ class FormulaFactory(val state: SolverState) {
       // (the corresponding a has to be used aswell)
       val implication: IFormula = (0 until nLinSets)
         .map(i =>
-          //(mu(i) === 0) ==> (lambdas(i).map(_.asInstanceOf[ITerm]) === 0)
-          (mu(i) =/= 0) ||| (lambdas(i).map(_.asInstanceOf[ITerm]) === 0) // equivalent to mu(i)=0 => lambdas=0
+          // equivalent to mu(i)===0 ===> lambdas===0:
+          (mu(i) =/= 0) ||| (lambdas(i).map(_.asInstanceOf[ITerm]) === 0) 
         )
         .reduce(_ &&& _)
 

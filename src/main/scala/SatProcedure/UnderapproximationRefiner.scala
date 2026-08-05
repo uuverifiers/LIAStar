@@ -19,12 +19,13 @@ class UnderapproximationRefiner(val solverState: SolverState, val formulaFactory
     )
 
     //println(
-      //s"DEBUG: before Augment application ${solverState.underApproxF_SLS}"
+      //s"DEBUG: before Saturate application ${solverState.underApproxF_SLS}"
     //)
 
-    solverState.underApproxF_SLS = solverState.underApproxF_SLS.augment(solverState)
+    solverState.underApproxF_SLS = solverState.underApproxF_SLS.saturate(solverState)
+    
     //println(
-      //s"DEBUGs: after Augment application ${solverState.underApproxF_SLS}. Transforming this to underapprox via starLIA"
+      //s"DEBUGs: after Saturate application ${solverState.underApproxF_SLS}. Transforming this to underapprox via starLIA"
     //)
     // convert SLS underapproximating f to a formula underapproximating f*
     solverState.underApproxFStar =

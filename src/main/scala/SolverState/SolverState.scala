@@ -48,8 +48,8 @@ class SolverState(
         X === (Y +++ Z))
         ==> overApproxFStar
 
-    SMT.isValid(
-      (overApproxCondition1 & overApproxCondition2),
+    SMT.isUnsat(
+      !(overApproxCondition1 & overApproxCondition2),
       this
     )
   }

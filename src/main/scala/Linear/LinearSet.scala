@@ -108,7 +108,7 @@ class LinearSet(
         Iterator(
           (pair(0), pair(1)),
           (pair(1), pair(0))
-        ) // TODO: check both directions in conditionIsValidFor
+        ) 
       }
       .collectFirst {
         case (b1, b2) if conditionIsValidFor(b1, b2) =>

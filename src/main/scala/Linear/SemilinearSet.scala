@@ -7,7 +7,7 @@ import ap.basetypes.IdealInt
 import LIAStarSolver.SolverState.SolverState
 import LIAStarSolver.SMT.SMT
 
-class SemilinearSet(val linearSets: Set[LinearSet]) { // evtl deterministich TODO
+class SemilinearSet(val linearSets: Set[LinearSet]) { 
 
   override def toString(): String = s"SLS(${linearSets.mkString(",")}"
   override def equals(other: Any): Boolean = other match {
@@ -18,12 +18,11 @@ class SemilinearSet(val linearSets: Set[LinearSet]) { // evtl deterministich TOD
 
   // return the semilinear set recieved by adding ls
   def addLS(ls: LinearSet): SemilinearSet = {
-    // TODO: require same length?
     SemilinearSet(linearSets + ls)
   }
 
   // apply merge, offsetDown and shiftDown rules, until the resulting SemilinearSet no longer changes
-  def augment(solverState: SolverState): SemilinearSet = {
+  def saturate(solverState: SolverState): SemilinearSet = {
     var current = this
     var changed = true
     while (changed) {

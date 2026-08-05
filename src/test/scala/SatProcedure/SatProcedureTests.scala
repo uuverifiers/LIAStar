@@ -1,11 +1,13 @@
 import ap.SimpleAPI
 import ap.parser._
 import ap.basetypes.IdealInt
+import ap.util.Timer
 
 import LIAStarSolver.SatProcedure.SatProcedure
 
 import LIAStarSolver.SolverState.SolverState
 import LIAStarSolver.SatResult._
+
 
 
 class SatProcedureTests extends munit.FunSuite {
@@ -45,12 +47,11 @@ class SatProcedureTests extends munit.FunSuite {
     val obtained = procedure.checkFormula()
     val expectedModelMap: Model = Map(X(0) -> 0, X(1) -> 0)
     obtained match {
-      case Sat(Some(m)) => assertEquals(m, expectedModelMap)
-      case Sat(None)    => true
+      case Sat(m) => assertEquals(m, expectedModelMap) // (only one model)
       case Unsat        => fail("got Unsat, expected Sat")
       case Inconclusive => {
         println(
-          s"""INFO: Inconclusive result for testcase true "${testname}""""
+          s"""INFO: Inconclusive result for testcase "${testname}""""
         )
         true
       }
@@ -72,7 +73,7 @@ class SatProcedureTests extends munit.FunSuite {
         fail(s"expected Unsat, got ${obtained}")
       case Inconclusive => {
         println(
-          s"""INFO: Inconclusive result for testcase true "${testname}""""
+          s"""INFO: Inconclusive result for testcase "${testname}""""
         )
         true
       }
@@ -93,7 +94,7 @@ class SatProcedureTests extends munit.FunSuite {
         fail(s"expected Unsat, got ${obtained}")
       case Inconclusive => {
         println(
-          s"""INFO: Inconclusive result for testcase true "${testname}""""
+          s"""INFO: Inconclusive result for testcase "${testname}""""
         )
         true
       }
@@ -113,11 +114,10 @@ class SatProcedureTests extends munit.FunSuite {
     val obtained = procedure.checkFormula()
     val expectedModelMap: Model = Map(X(0) -> 6, X(1) -> 3)
     obtained match {
-      case Sat(Some(m)) => assertEquals(m, expectedModelMap)
-      case Sat(None) => println("INFO: Correct Sat result, but could not find model")
+      case Sat(m) => assertEquals(m, expectedModelMap) // (only one model)
       case Inconclusive => {
         println(
-          s"""INFO: Inconclusive result for testcase true "${testname}""""
+          s"""INFO: Inconclusive result for testcase "${testname}""""
         )
         true
       }
@@ -140,7 +140,7 @@ class SatProcedureTests extends munit.FunSuite {
       case Sat(_)       => fail(s"expected Unsat, got ${obtained}")
       case Inconclusive => {
         println(
-          s"""INFO: Inconclusive result for testcase true "${testname}""""
+          s"""INFO: Inconclusive result for testcase "${testname}""""
         )
       }
       case Unsat => true
@@ -161,12 +161,11 @@ class SatProcedureTests extends munit.FunSuite {
     val obtained = procedure.checkFormula()
     obtained match {
       // NOTE: this does not ensure this is actually a correct model
-      case Sat(Some(m)) =>
+      case Sat(m) =>
         assert(m(X(0)) + m(X(1)) == IdealInt(9), "x+y!=9 in the returned Model")
-      case Sat(None) => println("INFO: Correct Sat result, but could not find model")
       case Inconclusive => {
         println(
-          s"""INFO: Inconclusive result for testcase true "${testname}""""
+          s"""INFO: Inconclusive result for testcase "${testname}""""
         )
       }
 
@@ -184,12 +183,12 @@ class SatProcedureTests extends munit.FunSuite {
     val f: IFormula = X(0) + X(1) === 3
     val procedure = SatProcedure(api, g, f, X)
 
-    val obtained = procedure.checkFormula()
+    val obtained = procedure.checkFormula(1)
     obtained match {
       case Sat(_)       => fail(s"expected Unsat, got ${obtained}")
       case Inconclusive => {
         println(
-          s"""INFO: Inconclusive result for testcase true "${testname}""""
+          s"""INFO: Inconclusive result for testcase "${testname}""""
         )
       }
       case Unsat => true
@@ -210,16 +209,15 @@ class SatProcedureTests extends munit.FunSuite {
 
     val obtained = procedure.checkFormula()
     obtained match {
-      case Sat(Some(m)) => {
+      case Sat(m) => {
         val x0 = m(X(0))
         val x1 = m(X(1))
         // NOTE: this only shows the returned model is in g, not necesarrily in f*!
         assert(x0 + 2 * x1 >= 17 && 6 * x0 - x1 <= 47)
       }
-      case Sat(None) => println("INFO: Correct Sat result, but could not find model")
       case Inconclusive => {
         println(
-          s"""INFO: Inconclusive result for testcase true "${testname}""""
+          s"""INFO: Inconclusive result for testcase "${testname}""""
         )
       }
       case Unsat => fail("Expected Sat, got ${obtained}")
@@ -241,10 +239,11 @@ class SatProcedureTests extends munit.FunSuite {
       case Sat(_)       => fail(s"expected Unsat, got ${obtained}")
       case Inconclusive => {
         println(
-          s"""INFO: Inconclusive result for testcase true "${testname}""""
+          s"""INFO: Inconclusive result for testcase "${testname}""""
         )
       }
       case Unsat => true
     }
   }
+
 }

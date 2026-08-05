@@ -26,36 +26,6 @@ object SMT {
     }
   }
 
-  // check if formula is Sat.
-  // Any other result returns false (including timeout)
-  // TODO is timeout even possible
-  def isSat(formula: IFormula, solverState: SolverState): Boolean = {
-    import solverState.solverInstance._
-    push()
-    !!(formula)
-    val res = ???
-    pop()
-    res match {
-      case ProverStatus.Sat => true
-      case _                => false
-    }
-  }
-  // check if formula is Valid.
-  // Any other result returns false (including timeout)
-  // TODO is timeout even possible
-  // TODO: remove since only used by one testing function?
-  // Rename since still checking Unsat not ProverStatus.Valid?
-  def isValid(formula: IFormula, solverState: SolverState): Boolean = {
-    import solverState.solverInstance._
-    push()
-    !!(!(formula))
-    val res = ???
-    pop()
-    res match {
-      case ProverStatus.Unsat => true
-      case _                  => false
-    }
-  }
 
   // check sat of a formula and return model if sat.
   // Use when no all quantifiers are in formula
@@ -119,7 +89,6 @@ object SMT {
       solverState: SolverState
   ): IFormula = {
     import solverState.solverInstance._
-    require(SMT.isUnsat(a & b, solverState)) // TODO: remove for performance?
 
     push()
     setConstructProofs(true) // needed for getInterpolants

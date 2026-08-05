@@ -51,33 +51,36 @@ class OverapproximationRefiner(
 
 
   def strengthenOverApproximation(): Unit = {
-
     // global reachability check underApprox(X) & f_less_2n(Y) & g(X+Y) unsat
     val unsatCondForStrengthenOver: IFormula =
       solverState.underApproxFStar & fLess2nUnfoldingsOfY & g_of_XplusY
 
     if (!(SMT.isUnsat(unsatCondForStrengthenOver, solverState))) {
       // condition to strengthen overapproximation not met
+      //println("DEBUG FAILED GLOBAL CONDITION")
       return
     }
 
     // check local reachability check: f1->f2 valid
 
-    // construct formulae that change between calls (due to underApproxFStar being updated)
     val f1 =
       formulaFactory.substituteX(solverState.underApproxFStar, Y) & fLessnUnfoldingsOfZ & XEqYPlusZ
+    // construct formulae that change between calls (due to underApproxFStar being updated)
     if (!(SMT.isUnsat(f1 & notf2Simplified, solverState))) {
-      // local reachability condition for strengthening not met
+      // f1 doesn't imply f2: local reachability condition for strengthening not met
+      //println("DEBUG FAILED LOCAL CONDITION")
       return
     }
 
+
+    
     // both conditions for strengthening met: 
     // => get Interpolant between f1 and f2
 
     val itp = SMT.getInterpolant(f1, notf2Simplified, solverState)
-      // TODO: /NOTE itp has as variables X (in general, where to mention this,
-      // how to make clear which variables occur for good readability/code clarity)
-    //println(s"DEBUG: in strengthenOver: find Interpolant ${pp(itp)}")
+    // NOTE: itp has as variables solverState.X
+
+    //println(s"DEBUG: f1 \n${pp(f1)} \n\n\n f2 \n ${pp(f2)} \n\n itp\n ${pp(itp)}")
     solverState.overApproxFStar = _getNextOverApprox(itp)
 
     // TODO: remove this sanity check at the end of implementation
@@ -85,7 +88,6 @@ class OverapproximationRefiner(
     // TODO: return wether it changed??
   }
 
-  // TODO: Maybe extract into it's own class??
   // update the the conjuncts from all previous interpolations.
   // return the overapproximation resulting from these conjuncts
   def _getNextOverApprox(newItp: IFormula): IFormula = {
@@ -133,8 +135,9 @@ class OverapproximationRefiner(
         // worst case, no clause was inductive
         return Seq()
       previousRemainingPredicates = remainingPredicates
+      //println(s"DEBUG: remaining PREDICATES ${remainingPredicates}")
 
-      // compute shared formulas for every p
+      // compute formulas that remain constant for the inductiveness test upfront
       val remainingPredicatesOfX = remainingPredicates.reduce(_ & _)
       val fOfY = formulaFactory.substituteX(solverState.f, Y)
       val subst = (solverState.X zip Y).map { case (x, y) =>

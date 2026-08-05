@@ -10,7 +10,10 @@ import ap.SimpleAPI.{ProverStatus, NoModelException}
 object SMT {
 
   // check if formula is Unsat.
-  // Any other result returns false (including timeout)
+  // Any other ProverStatus result returns false 
+  /////////
+  // IMPORTANT: false does not imply formula is sat!!!!!!
+  /////////
   def isUnsat(formula: IFormula, solverState: SolverState): Boolean = {
     import solverState.solverInstance._
     push()
@@ -25,7 +28,6 @@ object SMT {
       case _ => false
     }
   }
-
 
   // check sat of a formula and return model if sat.
   // Use when no all quantifiers are in formula

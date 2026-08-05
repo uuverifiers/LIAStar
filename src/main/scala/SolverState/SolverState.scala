@@ -31,27 +31,4 @@ class SolverState(
       .createConstants(num)
       .map(_.asInstanceOf[IConstant])
   }
-
-
-  // function for tests/assertions: test if overApproxFStar is truly an overapproximation of f
-  // TODO: just have this definition in testing???
-  def ___isOverapproximationTest: Boolean = {
-    import SimpleAPI.ProverStatus
-    val formulaFactory = FormulaFactory(this)
-    import formulaFactory._
-    val overApproxCondition1 = X === 0 ==> overApproxFStar
-    val Y = createConstants("y_", X.length)
-    val Z = createConstants("y_", X.length)
-    val overApproxCondition2 =
-      (substituteX(overApproxFStar, Y) &
-        substituteX(f, Z) &
-        X === (Y +++ Z))
-        ==> overApproxFStar
-
-    SMT.isUnsat(
-      !(overApproxCondition1 & overApproxCondition2),
-      this
-    )
-  }
-
 }

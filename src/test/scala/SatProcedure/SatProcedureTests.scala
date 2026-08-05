@@ -12,27 +12,6 @@ import LIAStarSolver.SatResult._
 
 class SatProcedureTests extends munit.FunSuite {
 
-  test("___isOverapproximationTest") {
-    // small test for the helper function ___isOverApproximationTest (which is only used for assertions)
-    val api = SimpleAPI.spawnWithAssertions
-    val X: Seq[IConstant] =
-      api.createConstants("x", 0 until 2) map (_.asInstanceOf[IConstant])
-    val f = X(0) === 2 & X(1) > 0
-    val procedure = SatProcedure(api, true, f, X)
-
-    assert(procedure.solverState.___isOverapproximationTest)
-    procedure.solverState.overApproxFStar = X === 0 | X(0) > 0
-    assert(procedure.solverState.___isOverapproximationTest)
-    procedure.solverState.overApproxFStar = X === 0 | X(0) > 0 & X(1) > -1000
-    assert(procedure.solverState.___isOverapproximationTest)
-
-    procedure.solverState.overApproxFStar = X === 0 | X(0) > 0 & X(1) > 1
-    assert(!(procedure.solverState.___isOverapproximationTest))
-    procedure.solverState.overApproxFStar = (X(0) === 2)
-    assert(!(procedure.solverState.___isOverapproximationTest))
-
-  }
-
   ////////////////////////////////////////////////////
   // checkFormula Tests
 

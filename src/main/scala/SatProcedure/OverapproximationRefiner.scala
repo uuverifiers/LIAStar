@@ -61,7 +61,7 @@ class OverapproximationRefiner(
       return
     }
 
-    // check local reachability check: f1->f2 valid
+    // check local reachability check: f1->f2 valid (equivalently f1&!f2 unsat)
 
     val f1 =
       formulaFactory.substituteX(solverState.underApproxFStar, Y) & fLessnUnfoldingsOfZ & XEqYPlusZ
@@ -82,10 +82,6 @@ class OverapproximationRefiner(
 
     //println(s"DEBUG: f1 \n${pp(f1)} \n\n\n f2 \n ${pp(f2)} \n\n itp\n ${pp(itp)}")
     solverState.overApproxFStar = _getNextOverApprox(itp)
-
-    // TODO: remove this sanity check at the end of implementation
-    assert(solverState.___isOverapproximationTest)
-    // TODO: return wether it changed??
   }
 
   // update the the conjuncts from all previous interpolations.

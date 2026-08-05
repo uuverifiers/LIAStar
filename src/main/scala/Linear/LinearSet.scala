@@ -147,8 +147,7 @@ class LinearSet(
           !(solverState.f),
           substMap
         )
-      val res = SMT.isUnsat(condition, solverState) 
-      res
+      SMT.isUnsat(condition, solverState) 
     }
 
     if (conditionIsValidFor(this, that)) {

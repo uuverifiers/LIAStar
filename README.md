@@ -1,6 +1,6 @@
 # LIAStar-Solver
 
-This repository contains an independent implementation of the LIA* solver proposed in *Solving LIA* Using Approximations* by Levatich et al. 
+This repository contains an independent implementation of the LIA* solver proposed in *Solving LIA\* Using Approximations* by Levatich et al. 
 It was developed as part of the bachelor's thesis *A Scala Implementation for Solving Linear Arithmetic with Stars*.
 
 ## Usage

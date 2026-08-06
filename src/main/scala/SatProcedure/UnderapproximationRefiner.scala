@@ -13,20 +13,13 @@ import LIAStarSolver.SMT.SMT
 class UnderapproximationRefiner(val solverState: SolverState, val formulaFactory: FormulaFactory) {
   def weakenUnderApproximation(solutionToAdd: Model): Unit = {
     val v = solverState.X.map(solutionToAdd).toVector
-    //println(s"DEBUG: WEAKEN UNDER, adding solution ${v} to U") 
     solverState.underApproxF_SLS = solverState.underApproxF_SLS.addLS(
       LinearSet(v, Vector())
     )
 
-    //println(
-      //s"DEBUG: before Saturate application ${solverState.underApproxF_SLS}"
-    //)
 
     solverState.underApproxF_SLS = solverState.underApproxF_SLS.saturate(solverState)
     
-    //println(
-      //s"DEBUGs: after Saturate application ${solverState.underApproxF_SLS}. Transforming this to underapprox via starLIA"
-    //)
     // convert SLS underapproximating f to a formula underapproximating f*
     solverState.underApproxFStar =
       formulaFactory.starLIA(solverState.underApproxF_SLS)

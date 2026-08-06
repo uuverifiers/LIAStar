@@ -42,7 +42,7 @@ object SMT {
     !!(formula)
     val res = ???
     val returnRes = if (res == SimpleAPI.ProverStatus.Sat) {
-      // TODO: can this throw NoModelException.type (from SimpleAPI)?
+      // TODO: possibly handle NoModelException.type (from SimpleAPI)?
       val model: Model =
         formulaVariables.map { x =>
           x -> eval(x)

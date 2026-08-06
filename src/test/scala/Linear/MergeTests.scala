@@ -5,7 +5,6 @@ import LIAStarSolver.TestHelpers.TestHelpers
 import ap.SimpleAPI
 import ap.parser.IConstant
 
-// TODO: im allgemeinen ne helper function, um zu checken, dass alle LS in f sind in den testcases?
 
 class MergeTests extends munit.FunSuite with TestHelpers {
   ////////////////////////////////////

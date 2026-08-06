@@ -48,33 +48,21 @@ class SatProcedure(
 
     // check if an exit criteria can be applied right from the start
     if (isEarlyUnsat) {
-      //println(
-        //s"INFO: EXIT: initial early unsat with overapprox ${pp(solverState.overApproxFStar)}"
-      //)
       return Unsat
     }
 
     val (earlySat, modelOptionRes): (Boolean, Option[Model]) = isEarlySat
     if (earlySat) {
-      //println(
-        //s"INFO: EXIT:  (initial) early sat with underapprox ${pp(solverState.underApproxFStar)}"
-      //)
-      return Sat(modelOptionRes.get) ////////////
+      return Sat(modelOptionRes.get)
     }
 
-    var _loopCount = 0 // TODO: only for debuggin purposes?!
     // this loop must converge at some point (could take infeasibly long)
     while (true) {
-      //println(s"\n\n INFO: top of while loop (iteration ${_loopCount})\n")
-      _loopCount += 1
 
       //////////////////////////////
       // check convergence of underapproximation to f*
       val convergenceRes = checkUnderApproxConvergence
       if (convergenceRes.isDefined) {
-        //println(
-          //s"INFO: EXIT: u (${pp(solverState.underApproxFStar)} converged to f*"
-        //)
         return convergenceRes.get
       }
 
@@ -88,21 +76,17 @@ class SatProcedure(
         overapproximationRefiner.strengthenOverApproximation()
       }
 
-      //println(s"INFO: new overapproximation ${solverState.overApproxFStar}")
 
       //////////////////////////////
       // check if exit criteria can be applied with the updated overapproximation
       if (isEarlyUnsat) {
-        //println(
-          //s"INFO: early unsat with overapprox ${pp(solverState.overApproxFStar)}"
-        //)
         return Unsat
       }
 
       //////////////////////////////
       // weaken the underapproximation
 
-      // TODO: rename? not testing convergence here, but it is the same formula constructed for convergence
+      // NOTE: not testing convergence here, but it is the same formula as constructed for convergence
       val convergenceCondition = solverState.f & !solverState.underApproxFStar
       // get model to add to solverState.underApproxF_SLS
       // !underApproxFStar can introduce all quantifier => use checkValidityAndModel instead of checkSatAndModel
@@ -128,25 +112,17 @@ class SatProcedure(
           solution_fAndNotUnderapprox
         )
       }
-      //println(
-        //s"INFO: WEAKENED underapproximation:${pp(solverState.underApproxFStar)} with U ${solverState.underApproxF_SLS}"
-      //)
 
       //////////////////////////////
       // check if exit criteria can be applied with the updated underapproximation
       val (earlySat, modelOptionRes): (Boolean, Option[Model]) = isEarlySat
       if (earlySat) {
-        //println(
-          //s"INFO: early sat with underapprox ${pp(solverState.underApproxFStar)}"
-        //)
         return Sat(modelOptionRes.get) ////////////
       }
 
-      // println("\nDEBUG: bottom of while loop \n\n")
-
     }
     assert(true == false) // Can never reach here
-    return Inconclusive // TODO: unreachable, maybe refactor
+    return Inconclusive 
   }
 
   // return true if g & Overapproximation is unsat. Then g & f* must be unsat

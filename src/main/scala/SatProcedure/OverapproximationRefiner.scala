@@ -57,7 +57,6 @@ class OverapproximationRefiner(
 
     if (!(SMT.isUnsat(unsatCondForStrengthenOver, solverState))) {
       // condition to strengthen overapproximation not met
-      //println("DEBUG FAILED GLOBAL CONDITION")
       return
     }
 
@@ -68,7 +67,6 @@ class OverapproximationRefiner(
     // construct formulae that change between calls (due to underApproxFStar being updated)
     if (!(SMT.isUnsat(f1 & notf2Simplified, solverState))) {
       // f1 doesn't imply f2: local reachability condition for strengthening not met
-      //println("DEBUG FAILED LOCAL CONDITION")
       return
     }
 
@@ -80,7 +78,6 @@ class OverapproximationRefiner(
     val itp = SMT.getInterpolant(f1, notf2Simplified, solverState)
     // NOTE: itp has as variables solverState.X
 
-    //println(s"DEBUG: f1 \n${pp(f1)} \n\n\n f2 \n ${pp(f2)} \n\n itp\n ${pp(itp)}")
     solverState.overApproxFStar = _getNextOverApprox(itp)
   }
 
@@ -88,7 +85,6 @@ class OverapproximationRefiner(
   // return the overapproximation resulting from these conjuncts
   def _getNextOverApprox(newItp: IFormula): IFormula = {
     val conjuncts = FormulaFactory.conjuncts(newItp)
-    // TODO: make sure allInterpolantsConjuncts don't contain duplicates!?
     solverState.allInterpolantConjuncts =
       solverState.allInterpolantConjuncts ++ conjuncts
 
@@ -131,7 +127,6 @@ class OverapproximationRefiner(
         // worst case, no clause was inductive
         return Seq()
       previousRemainingPredicates = remainingPredicates
-      //println(s"DEBUG: remaining PREDICATES ${remainingPredicates}")
 
       // compute formulas that remain constant for the inductiveness test upfront
       val remainingPredicatesOfX = remainingPredicates.reduce(_ & _)

@@ -34,7 +34,10 @@ object FormulaFactory {
     else
       B.transpose.map { col =>
         (col zip lambdas)
-          .map { case (bij: IdealInt, lam: IConstant) => lam * bij }
+          //Kilian's original version
+          //.map { case (bij: IdealInt, lam: IConstant) => lam * bij }
+          //mit collect werden nur die Elte transformiert die gematcht werden
+          .collect { case (bij: IdealInt, lam: IConstant) if bij != IdealInt.ZERO => lam * bij}
           .reduceOption(_ + _)
           .getOrElse(IExpression.i(0))
       }

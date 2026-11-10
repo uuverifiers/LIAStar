@@ -19,7 +19,7 @@ import LIAStarSolver.SatResult.{SatResult, Sat, Unsat}
   val f: IFormula = (x1 === 1 & x2 === 1) | (x1 === 3 & x2 === 0)
 
   val s = SatProcedure(api, g, f, X)
-  val res: SatResult = s.checkFormula(1)
+  val res: SatResult = s.checkFormula(5)
   println(res)
   api.shutDown
 

@@ -13,3 +13,14 @@ lazy val root = project
         ("io.github.uuverifiers" %% "princess" % "2026-05-20").cross(CrossVersion.for3Use2_13)
     )
   )
+
+  commands += Command.args("testOnlyExp", "<test>") {
+  (state, args) =>
+    val cmds = Seq(
+      "set scalacOptions += \"-explain\"",
+      "testOnly " + args.mkString(" "),
+      "set scalacOptions -= \"-explain\""
+    )
+
+    cmds.foldRight(state)(_ :: _)
+}

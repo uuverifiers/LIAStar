@@ -125,7 +125,7 @@ class LinearSet(
         ls2: LinearSet
     ): Boolean = {
       // for ls1 = LinearSet(a1, B1) and ls2 = LinearSet(a2, B2)
-      // check if vecLessThan(a2,a1) and Forall Lamda; f(a2 + Lambda1*B1 + Lambda2*B2 + lambda3*(a1-a2))
+      // check if vecLessThan(a2,a1) and Forall Lambda; f(a2 + Lambda1*B1 + Lambda2*B2 + lambda3*(a1-a2))
       // (where Lambda1*B1 and Lambda2*B2 is Vector*Matrix multiplication)
 
       if (!vecLessThan(ls2.a, ls1.a)) {
@@ -138,10 +138,30 @@ class LinearSet(
       val Lambdas1B1: Seq[ITerm] = FormulaFactory.lambdaTimesB(Lambdas1, ls1.B, ls1.a.length)
       val Lambdas2B2: Seq[ITerm] =FormulaFactory.lambdaTimesB(Lambdas2, ls2.B, ls2.a.length)
       val a1_minus_a2 = vecMinus(ls1.a, ls2.a)
-      val substMap: Map[ConstantTerm, ITerm] = solverState.X.indices.map { i =>
+      //catch multiplication by zero
+      val substMap: Map[ConstantTerm, ITerm] =
+        solverState.X.indices.map { i =>
+
+          val delta = a1_minus_a2(i)
+
+          val base: ITerm =
+            ls2.a(i) + Lambdas1B1(i) + Lambdas2B2(i)
+
+          val expression: ITerm =
+            if (delta == IdealInt.ZERO) {
+              base
+            } else {
+              base + delta * lambda3
+            }
+
+          solverState.X(i).c -> expression
+        }.toMap
+      
+      //Kilian's original version
+      /*val substMap: Map[ConstantTerm, ITerm] = solverState.X.indices.map { i =>
         solverState.X(i).c ->
           (ls2.a(i) + Lambdas1B1(i) + Lambdas2B2(i) + a1_minus_a2(i) * lambda3)
-      }.toMap
+      }.toMap */
       val condition =
         Lambdas1 >= 0 & Lambdas2 >= 0 & lambda3 >= 0 & ConstantSubstVisitor(
           !(solverState.f),

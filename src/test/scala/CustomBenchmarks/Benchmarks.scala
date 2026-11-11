@@ -10,60 +10,7 @@ import LIAStarSolver.SatProcedure.SatProcedure
 
 import LIAStarSolver.SolverState.SolverState
 import LIAStarSolver.SatResult._
-
-//Use Notation from Knuths Book
-/*def sortingNetwork(X: Seq[IConstant], Y: Seq[IConstant], api: SimpleAPI): Seq[IFormula] = {
-  val res = Seq[IFormula]()
-  val N = X.length
-  if Y.length != N then throw new Exception("Wrong number of sorted bounds")
-  val t = math.ceil(math.log(N)/math.log(2)).toInt
-  val maxLayers = (t * (t + 1) / 2).toInt
-  val layers = (0 to maxLayers).map(i => (0 to N - 1).map(j => api.createConstant(s"x$i$j")))
-  //Initialize layers
-  val init = for(i <- 0 to N -1) yield X(i) === layers(0)(i) & Y(i) === layers(maxLayers)(i)
-  //Define compare and swap function
-  def compSwap(pos1: Int, pos2: Int, layer: Int): IFormula = {
-    val first = math.min(pos1, pos2)
-    val second = math.max(pos1, pos2)
-    ((layers(layer)(first) <= layers(layer)(second) & layers(layer + 1)(first) === layers(layer)(first) & layers(layer + 1)(second) === layers(layer)(second)) | (layers(layer)(first) > layers(layer)(second) & layers(layer + 1)(first) === layers(layer)(second) & layers(layer + 1)(second) === layers(layer)(first)))
-  }
-  //Propagate equality over layers
-  def propLayer(ind: Seq[Int], layer: Int) =
-    (for(x <- ind) yield layers(layer + 1)(x) === layers(layer)(x)).fold(IBoolLit(true))(_ & _)
-
-  //M1+M2 Initialisation
-  val p = math.pow(2,t-1).toInt
-  val q = math.pow(2,t-1).toInt
-  val r = 0
-  val d = p
-  def M3(p: Int, q: Int, r: Int, d: Int, currlayer: Int): Seq[IFormula] = {
-    println(s"p=$p, q=$q, r=$r, d=$d")
-    val body = {
-      if currlayer < maxLayers then
-        for(i <- 0 to (N - d - 1)) 
-          yield 
-            if (i & p) == r then
-              compSwap(i, i+d, currlayer) 
-            else 
-              propLayer(Seq(i, i+d),currlayer)//The loop Body is M4
-        else
-          Seq.empty[IFormula]
-    }
-    //Check M5
-    if q != p then
-      body ++ M3(p, q/2, p, q-p, currlayer + 1)
-    //Check M6
-    else if p != 0 then
-      val p0 = (p / 2).toInt
-      body ++ M3(p0, math.pow(2,t-1).toInt, 0, p0, currlayer + 1)
-    else
-      Seq.empty[IFormula]
-  }
-  init ++ M3(p, q, r, d, 0)
-}
-*/
-
-
+import LIAStarSolver.Sorting.SortingEncoding
 
 class BenchmarkTests extends munit.FunSuite {
   test("Sorting Network implementation") {
@@ -71,7 +18,7 @@ class BenchmarkTests extends munit.FunSuite {
     val api: SimpleAPI = SimpleAPI.spawn
     val X = (0 to 15).map(i => api.createConstant(s"x$i").asInstanceOf[IConstant])
     val Y = (0 to 15).map(i => api.createConstant(s"y$i").asInstanceOf[IConstant])
-    println(sortingNetwork(X,Y,api).fold(IBoolLit(true))(_ & _))
+    println(SortingEncoding.sortingNetwork(X, Y, api).fold(IBoolLit(true))(_ & _))
   }
 
   test("Two sums, sorting network, no read, linear f, SAT") {
@@ -131,7 +78,7 @@ class BenchmarkTests extends munit.FunSuite {
     println("Current Sorting Network")
     println(sortNetworkInit ++ sortConstraints)
     println("Knuths Algorithm")
-    println(sortingNetwork(X, Y, api))
+    println(SortingEncoding.sortingNetwork(X, Y, api))
   
 
     //Translation to LIA*-constraints

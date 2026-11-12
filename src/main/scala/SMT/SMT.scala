@@ -39,21 +39,23 @@ object SMT {
 
     import solverState.solverInstance._
     push()
-    !!(formula)
-    val res = ???
-    val returnRes = if (res == SimpleAPI.ProverStatus.Sat) {
-      // TODO: possibly handle NoModelException.type (from SimpleAPI)?
-      val model: Model =
-        formulaVariables.map { x =>
-          x -> eval(x)
-        }.toMap
-      (res, Some(model))
-
-    } else {
-      (res, None)
+    //Handle NoModelException.type
+    try {
+      !!(formula)
+      ??? match {
+        case ProverStatus.Sat => {
+          val model: Model =
+            formulaVariables.map { x =>
+              x -> eval(x)
+            }.toMap
+          (ProverStatus.Sat, Some(model))
+        }
+        case status => (status, None)
+      }
     }
-    pop()
-    returnRes
+    finally{
+      pop()
+    }
 
   }
 
@@ -66,21 +68,23 @@ object SMT {
   ): (ProverStatus.Value, Option[Model]) = {
     import solverState.solverInstance._
     push()
-    ??(formula)
-    makeExistential(formulaVariables)
-    val res = ???
-    val returnRes = if (res == SimpleAPI.ProverStatus.Valid) {
-      val model: Model =
-        formulaVariables.map { x =>
-          x -> eval(x)
-        }.toMap
-      (res, Some(model))
+    try {
+      ??(formula)
+      makeExistential(formulaVariables)
+      ??? match {
+        case ProverStatus.Valid =>
+          val model: Model =
+            formulaVariables.map { x =>
+              x -> eval(x)
+            }.toMap
+          (ProverStatus.Valid, Some(model))
 
-    } else {
-      (res, None)
+        case status =>
+          (status, None)
+      }
+    } finally {
+      pop()
     }
-    pop()
-    returnRes
   }
 
   // calculate ITP, s.t a -> ITP and ITP -> !b
@@ -93,15 +97,16 @@ object SMT {
     import solverState.solverInstance._
 
     push()
-    setConstructProofs(true) // needed for getInterpolants
-    setPartitionNumber(1)
-    !!(a)
-    setPartitionNumber(2)
-    !!(b)
-    ??? // show eldarica a&b is unsat
-    val res = getInterpolants(Seq(Set(1), Set(2)))(0)
-    pop()
-
-    res
+    try {
+      setConstructProofs(true) // needed for getInterpolants
+      setPartitionNumber(1)
+      !!(a)
+      setPartitionNumber(2)
+      !!(b)
+      ???; // show eldarica a&b is unsat; Semicolon to not treat ??? as infix
+      getInterpolants(Seq(Set(1), Set(2)))(0)
+    } finally {
+      pop()
+    }
   }
 }

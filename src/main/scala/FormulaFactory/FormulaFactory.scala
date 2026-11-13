@@ -9,10 +9,10 @@ import LIAStarSolver.SolverState.SolverState
 import LIAStarSolver.Linear.SemilinearSet
 
 object FormulaFactory {
+  //conjuncts computes the sequence of conjuncts of a formula f at the outermost level, i.e. it does NOT detect conjuncts such as f | g1 & g2 
   def conjuncts(f: IFormula): Seq[IFormula] = f match {
     case IBinFormula(IBinJunctor.And, left, right) =>
       conjuncts(left) ++ conjuncts(right)
-
     case _ =>
       Seq(f)
   }
@@ -53,6 +53,7 @@ class FormulaFactory(val state: SolverState) {
     } else {
       val h1 = state.createConstants(Y.length)
       val h2 = state.createConstants(Y.length)
+      // "+++" is vector addition, Y=f(h1)+fLessN(n-1,h2)
       val unquantified = Y === (h1 +++ h2) &&&
         substituteX(state.f, h1) &&&
         fLessN(n - 1, h2)
@@ -74,7 +75,7 @@ class FormulaFactory(val state: SolverState) {
     )
     val substMap: Map[ConstantTerm, ITerm] =
       state.X.zip(Y).map { case (x, y) => x.c -> y.asInstanceOf[ITerm] }.toMap
-    return ConstantSubstVisitor(formula, substMap)
+    ConstantSubstVisitor(formula, substMap)
   }
 
   // return a formula r, s.t x \in f*(x) <=> r(x),
@@ -107,7 +108,7 @@ class FormulaFactory(val state: SolverState) {
 
       // mu can't be empty, since nLineSets != 0
       val muNonNegative: IFormula = mu.map(_ >= 0).reduce(_ &&& _)
-      // lambdas could be empty
+      // lambdas could be empty (if there is no B in the representation)
       val lambdasNonNegative: IFormula =
         lambdas.map(b => b.map(_ >= 0).fold(IExpression.i(true))(_ &&& _)).reduce(_ &&& _)
 

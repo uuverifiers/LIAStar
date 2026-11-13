@@ -8,6 +8,8 @@ import ap.parser.IExpression.RichITermSeq
 import LIAStarSolver.SolverState.SolverState
 import LIAStarSolver.FormulaFactory.FormulaFactory
 import LIAStarSolver.SMT.SMT
+
+//a vector is less than another if each component has the same direction and the smaller one is closer to the origin
 def vecLessThan(a: Vector[IdealInt], b: Vector[IdealInt]): Boolean = {
   a.zip(b).forall((a, b) => (0 <= a && a <= b) || (0 >= a && a >= b))
 }
@@ -26,12 +28,14 @@ class LinearSet(
 
   // BWithDuplicates can contain duplicates and 0 vector.
   // These are removed in B and B is turned into a canonical representation
+  // Canonical ordering for better comparability
   val B =
     BWithDuplicatesAnd0.distinct
       .filterNot(b => b.forall(_ == IdealInt.ZERO))
       .sortBy(_.toString.mkString(","))
 
   override def toString(): String = s"LS(a: ${a}, B: ${B})"
+  //Two Linear Sets are equal if they have the same a and the same B
   override def equals(other: Any): Boolean = other match {
     case ls: LinearSet => a == ls.a && B == ls.B
     case _             => false
@@ -44,7 +48,7 @@ class LinearSet(
   def shiftDown(solverState: SolverState): Option[LinearSet] = {
     def conditionIsValidFor(b: Vector[IdealInt]): Boolean = {
       // check if Forall Lamda; f(a - b + Lambda*B) is valid
-      // (where Lambda*B is Vector*Matrix multiplication
+      // (where Lambda*B is Vector*Matrix multiplication)
 
       val lambdas = solverState.createConstants("lambda_", B.length)
 
@@ -84,7 +88,7 @@ class LinearSet(
     ): Boolean = {
       // check if vecLessThan(b2,b1) and Forall Lamda; f(a + Lambda*B') with
       // B' = B\{b1} union {b1-b2} is valid
-      // (where Lambda*B' is Vector*Matrix multiplication
+      // (where Lambda*B' is Vector*Matrix multiplication)
 
       if (!vecLessThan(b2, b1)) {
         return false
@@ -131,12 +135,12 @@ class LinearSet(
       if (!vecLessThan(ls2.a, ls1.a)) {
         return false
       }
-      val Lambdas1 = solverState.createConstants("lambda1_", ls1.B.length)
-      val Lambdas2 = solverState.createConstants("lambda2_", ls2.B.length)
+      val lambdas1 = solverState.createConstants("lambda1_", ls1.B.length)
+      val lambdas2 = solverState.createConstants("lambda2_", ls2.B.length)
       val lambda3 = solverState.solverInstance.createConstant("lambda3")
 
-      val Lambdas1B1: Seq[ITerm] = FormulaFactory.lambdaTimesB(Lambdas1, ls1.B, ls1.a.length)
-      val Lambdas2B2: Seq[ITerm] =FormulaFactory.lambdaTimesB(Lambdas2, ls2.B, ls2.a.length)
+      val lambdas1B1: Seq[ITerm] = FormulaFactory.lambdaTimesB(lambdas1, ls1.B, ls1.a.length)
+      val lambdas2B2: Seq[ITerm] =FormulaFactory.lambdaTimesB(lambdas2, ls2.B, ls2.a.length)
       val a1_minus_a2 = vecMinus(ls1.a, ls2.a)
       //catch multiplication by zero
       val substMap: Map[ConstantTerm, ITerm] =
@@ -145,7 +149,7 @@ class LinearSet(
           val delta = a1_minus_a2(i)
 
           val base: ITerm =
-            ls2.a(i) + Lambdas1B1(i) + Lambdas2B2(i)
+            ls2.a(i) + lambdas1B1(i) + lambdas2B2(i)
 
           val expression: ITerm =
             if (delta == IdealInt.ZERO) {
@@ -163,7 +167,7 @@ class LinearSet(
           (ls2.a(i) + Lambdas1B1(i) + Lambdas2B2(i) + a1_minus_a2(i) * lambda3)
       }.toMap */
       val condition =
-        Lambdas1 >= 0 & Lambdas2 >= 0 & lambda3 >= 0 & ConstantSubstVisitor(
+        lambdas1 >= 0 & lambdas2 >= 0 & lambda3 >= 0 & ConstantSubstVisitor(
           !(solverState.f),
           substMap
         )
